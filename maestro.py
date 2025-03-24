@@ -22,6 +22,17 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 
 
+while True:
+    try:
+        bot.polling(none_stop=True, timeout=10, long_polling_timeout=10)
+    except Exception as e:
+        print(f"Hata oluştu: {e}")
+        time.sleep(5)  # 5 saniye bekleyip tekrar başlat
+
+
+
+
+
 @bot.message_handler(commands=['start'])
 def start(message):
     username = message.from_user.username if message.from_user.username else "kullanıcı"
@@ -280,15 +291,9 @@ def show_commands(call):
     # 3 butonluk satır
     markup.add(
         types.InlineKeyboardButton('👪 Anne Baba', callback_data='annebaba'),
-        types.InlineKeyboardButton('👶 Cocuk', callback_data='cocuk'),
         types.InlineKeyboardButton('🏡 Hane', callback_data='hane')
     )
 
-
-    markup.add(
-       types.InlineKeyboardButton('🌸 Kizlik', callback_data='kizlik')
-
-    )
 
 
     markup.add(
@@ -330,13 +335,6 @@ def show_commands(call):
 
     # Alttaki satır: 3 buton
     markup.add(
-        types.InlineKeyboardButton('📡 Ttnet', callback_data='ttnet'), 
-        types.InlineKeyboardButton('🎓 Universite', callback_data='universite'), 
-
-    )
-
-    # Alttaki satır: 3 buton
-    markup.add(
         types.InlineKeyboardButton('🌟 Burc', callback_data='burc'), 
 
     )
@@ -352,7 +350,6 @@ def show_commands(call):
         reply_markup=markup
     )
 
-# ─── KOMUTLARIN DETAYLARI ─────────────────────────────────────────────
 @bot.callback_query_handler(func=lambda call: call.data in [
     "sorgu", "tc", "adres", "sokaktum", "tcgsm", "gsmtc", "gsmdetay",
     "aile", "annebaba", "cocuk", "bin", "hane", "sulale", "sgkyetkili",
@@ -361,6 +358,8 @@ def show_commands(call):
     "premiumsorgu","ttnet","universite","burc"
 ])
 def handle_command_help(call):
+    help_text = "Bu komut hakkında bilgi bulunamadı."  # Varsayılan mesaj ekledik
+
     if call.data == 'sorgu':
         help_text = "/sorgu (Ad Soyad/il ilce) yazarak sorgula."
     elif call.data == 'tc':
@@ -413,9 +412,10 @@ def handle_command_help(call):
         help_text = "/universite (TC) yazarak universite sorgu yap."
     elif call.data == 'burc':
         help_text = "/burc (TC) yazarak burcunu sorgu yap."
+
     markup = types.InlineKeyboardMarkup()
-    # Geri butonuna basınca komutlar menüsü yeniden yüklensin
     markup.add(types.InlineKeyboardButton("↩️ Geri", callback_data="commands"))
+
     bot.edit_message_text(
         help_text, 
         chat_id=call.message.chat.id, 
@@ -423,6 +423,9 @@ def handle_command_help(call):
         reply_markup=markup
     )
 
+
+
+    
 # ─── ANA MENÜYE DÖNÜŞ ───────────────────────────────────────────────
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_main")
 def back_to_main_menu(call):
