@@ -3919,9 +3919,6 @@ def is_valid_ip(ip):
 
 
 
-
-
-
 @bot.message_handler(commands=['sgkyetkili'])
 def sgk_yetkili_sorgu(message):
     args = message.text.split()
@@ -3931,9 +3928,12 @@ def sgk_yetkili_sorgu(message):
 
     tc = args[1]
     api_url = f"https://api.ondex.uk/ondexapi/isyeriyetkilisorgu.php?tc={tc}"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    }
 
     try:
-        response = requests.get(api_url)
+        response = requests.get(api_url, headers=headers)
         data = response.json()
 
         if "Veri" not in data or not data["Veri"]:
@@ -3970,8 +3970,6 @@ def sgk_yetkili_sorgu(message):
 
 
 
-
-        
 
 
 
