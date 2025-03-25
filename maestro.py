@@ -3891,7 +3891,7 @@ def isyeri_sorgu(message):
 
 
 
-
+import requests
 
 @bot.message_handler(commands=['isyeri'])
 def isyeri_sorgu(message):
@@ -3904,7 +3904,7 @@ def isyeri_sorgu(message):
     api_url = f"https://api.ondex.uk/ondexapi/isyerisorgu.php?tc={tc}"
 
     headers = {
-        'User-Agent': 'MyBot/1.0'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
     }
 
     try:
@@ -3946,6 +3946,8 @@ def isyeri_sorgu(message):
 
 
 
+
+        
 
 while True:
     try:
