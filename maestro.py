@@ -1,5 +1,4 @@
 import telebot
-import re
 import base64
 import requests
 import os
@@ -3800,57 +3799,6 @@ def dns_sorgu(message):
 
 
 
-@bot.message_handler(commands=['isyeri'])
-def isyeri_sorgu(message):
-    args = message.text.split()
-    if len(args) != 2:
-        bot.reply_to(message, "Lütfen bir TC kimlik numarası girin.\nÖrnek: `/isyeri 12345678901`", parse_mode="Markdown")
-        return
-
-    tc = args[1]
-    api_url = f"https://api.ondex.uk/ondexapi/isyerisorgu.php?tc={tc}"
-
-    try:
-        response = requests.get(api_url)
-        data = response.json()
-
-        if "Kisi" not in data or "Isyeri" not in data:
-            bot.reply_to(message, "⚠️ Geçerli bir kayıt bulunamadı.")
-            return
-
-        kisi = data["Kisi"]
-        isyeri = data["Isyeri"]
-
-        result_text = f"""
-╭━━━━━━━━━━━━━━
-┃ İŞYERİ SORGU SONUCU
-┃➥ Ad Soyad: {kisi.get("AdiSoyadi", "Bilinmiyor")}
-┃➥ Kimlik Numarası: {kisi.get("KimlikNumarasi", "Bilinmiyor")}
-┃➥ Çalışma Durumu: {kisi.get("CalismaDurumu", "Bilinmiyor")}
-┃➥ İşe Giriş Tarihi: {kisi.get("IseGirisTarihi", "Bilinmiyor")}
-┃
-┃ İŞYERİ BİLGİLERİ
-┃➥ Ünvan: {isyeri.get("IsyeriUnvani", "Bilinmiyor")}
-┃➥ Sektör: {isyeri.get("IsyeriSektoru", "Bilinmiyor")}
-┃➥ Tehlike Sınıfı: {isyeri.get("TehlikeSinifi", "Bilinmiyor")}
-┃➥ NACE Kodu: {isyeri.get("NaceKodu", "Bilinmiyor")}
-┃➥ SGK Sicil No: {isyeri.get("IsyeriSGKSicilNo", "Bilinmiyor")}
-╰━━━━━━━━━━━━━━
-"""
-
-        bot.reply_to(message, result_text)
-
-    except Exception as e:
-        bot.reply_to(message, f"⚠️ Bir hata oluştu: {str(e)}")
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3969,7 +3917,63 @@ def is_valid_ip(ip):
 
 
 
-    
+
+
+
+
+
+@bot.message_handler(commands=['sgkyetkili'])
+def sgk_yetkili_sorgu(message):
+    args = message.text.split()
+    if len(args) != 2:
+        bot.reply_to(message, "Lütfen bir TC kimlik numarası girin.\nÖrnek: `/sgkyetkili 12345678901`", parse_mode="Markdown")
+        return
+
+    tc = args[1]
+    api_url = f"https://api.ondex.uk/ondexapi/isyeriyetkilisorgu.php?tc={tc}"
+
+    try:
+        response = requests.get(api_url)
+        data = response.json()
+
+        if "Veri" not in data or not data["Veri"]:
+            bot.reply_to(message, "⚠️ Geçerli bir kayıt bulunamadı.")
+            return
+
+        yetkili_listesi = data["Veri"]
+        result_text = f"""
+╭━━━━━━━━━━━━━━
+┃ 📌 İŞYERİ YETKİLİ SORGUSU
+┃━━━━━━━━━━━━━━
+"""
+
+        for yetkili in yetkili_listesi:
+            result_text += f"""┃➥ 👤 Yetkili: {yetkili.get("AdiSoyadi", "Bilinmiyor")}
+┃➥ 🆔 Kimlik No: {yetkili.get("KimlikNumarasi", "Bilinmiyor")}
+┃➥ 📍 Yetkililik Durumu: {yetkili.get("YetkililikDurumu", "Bilinmiyor")}
+┃➥ 🔹 Yetkili Türü: {yetkili.get("YetkiliTuru", "Bilinmiyor")}
+┃➥ 🏷 Yetkili Kodu: {yetkili.get("YetkiliKodu", "Bilinmiyor")}
+┃━━━━━━━━━━━━━━
+"""
+
+        result_text += "╰━━━━━━━━━━━━━━"
+
+        bot.reply_to(message, result_text)
+
+    except Exception as e:
+        bot.reply_to(message, f"⚠️ Bir hata oluştu: {str(e)}")
+
+
+
+
+
+
+
+
+
+        
+
+
 
 while True:
     try:
