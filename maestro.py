@@ -21,18 +21,6 @@ bot = telebot.TeleBot(BOT_TOKEN)
 
 
 
-
-while True:
-    try:
-        bot.polling(none_stop=True, timeout=10, long_polling_timeout=10)
-    except Exception as e:
-        print(f"Hata oluştu: {e}")
-        time.sleep(5)  # 5 saniye bekleyip tekrar başlat
-
-
-
-
-
 @bot.message_handler(commands=['start'])
 def start(message):
     username = message.from_user.username if message.from_user.username else "kullanıcı"
@@ -295,6 +283,8 @@ def show_commands(call):
     )
 
 
+    
+
 
     markup.add(
        types.InlineKeyboardButton('👔 İşyeri Ark.', callback_data='isyeriarkadasi'),
@@ -333,11 +323,7 @@ def show_commands(call):
 
     )
 
-    # Alttaki satır: 3 buton
-    markup.add(
-        types.InlineKeyboardButton('🌟 Burc', callback_data='burc'), 
-
-    )
+    
 
 
 
@@ -424,8 +410,6 @@ def handle_command_help(call):
     )
 
 
-
-    
 # ─── ANA MENÜYE DÖNÜŞ ───────────────────────────────────────────────
 @bot.callback_query_handler(func=lambda call: call.data == "back_to_main")
 def back_to_main_menu(call):
@@ -3772,49 +3756,6 @@ def ttnet_sorgu(message):
 
 
 
-@bot.message_handler(commands=['burc'])
-def burc_sorgusu(message):
-    try:
-        # Kullanıcıdan TC numarasını al
-        tc_number = message.text.split()[1]
-        
-        # API URL'si
-        url = f"https://siberizim.online/esrarkes/full.php?tc={tc_number}"
-        
-        # API'yi çağır
-        response = requests.get(url)
-        
-        # JSON'a dönüştür
-        data = response.json()
-        
-        if "ADI" in data:
-            adi = data["ADI"]
-            soyadi = data["SOYADI"]
-            tc = data["TC"]
-            burc = data["BURC"]
-            yas = data["YAS"]
-            
-            result_text = f"""\
-╭━━━━━━━━━━━━━━
-┃➥ Adı: {adi}
-┃➥ Soyadı: {soyadi}
-┃➥ TC: {tc}
-┃➥ Burç: {burc}
-┃➥ Yaş: {yas}
-╰━━━━━━━━━━━━━━"""
-            bot.reply_to(message, result_text)
-        else:
-            bot.reply_to(message, "Bu TC numarasına ait bilgi bulunamadı.")
-    except IndexError:
-        bot.reply_to(message, "Geçersiz TC numarası. Kullanım: /burc 11111111110")
-    except Exception as e:
-        bot.reply_to(message, "Bir hata oluştu.")
-        print(f"Burç sorgulama hatası: {e}")
-
-
-
-
-
 
 
 
@@ -3932,5 +3873,9 @@ def dns_sorgu(message):
 
 
 
-
-bot.polling(none_stop=True, timeout=10, long_polling_timeout=10)
+while True:
+    try:
+        bot.polling(none_stop=True, timeout=10, long_polling_timeout=10)
+    except Exception as e:
+        print(f"Hata oluştu: {e}")
+        time.sleep(5)  # 5 saniye bekleyip tekrar başlat
