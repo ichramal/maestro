@@ -4059,49 +4059,58 @@ def gsm_to_tc(message):
 
 
 
-
-
-
-
-
-
-bot.message_handler(commands=['sokaktum'])
+@bot.message_handler(commands=['sokaktum'])
 def sokaktum(message):
-    tc = message.text.split()[1]  # TC numarasını mesajdan alıyoruz
-    url = f"https://api.ondex.uk/ondexapi/sokaksorgu.php?tc={tc}"
-    
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
-    
-    response = requests.get(url, headers=headers)
-    data = response.json()
+    try:
+        # TC numarasını mesajdan alıyoruz
+        if len(message.text.split()) < 2:
+            bot.send_message(message.chat.id, "Lütfen bir TC numarası girin. Örnek: /sokaktum 12345678901")
+            return
 
-    if 'Veri' in data:
-        result = "╭━━━━━━━━━━━━━━━━━━━━━\n"
-        result += "┃ Sokak Sorgu Sonuçları:\n"
+        tc = message.text.split()[1]
         
-        for item in data['Veri']:
-            result += f"┃ ➥ Kimlik No: {item.get('KimlikNo', 'Bilinmiyor')}\n"
-            result += f"┃ ➥ Adı Soyadı: {item.get('AdiSoyadi', 'Bilinmiyor')}\n"
-            result += f"┃ ➥ Doğum Yeri: {item.get('DogumYeri', 'Bilinmiyor')}\n"
-            result += f"┃ ➥ İkametgah: {item.get('Ikametgah', 'Bilinmiyor')}\n"
-            result += "┃\n"
+        # API URL'si
+        url = f"https://api.ondex.uk/ondexapi/sokaksorgu.php?tc={tc}"
+        
+        # Header bilgileri
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        # API'den veri çekme
+        response = requests.get(url, headers=headers)
+        
+        # API cevabını JSON formatında alma
+        data = response.json()
 
-        result += "╰━━━━━━━━━━━━━━━━━━━━━"
+        # Veriyi işleme
+        if 'Veri' in data:
+            result = "╭━━━━━━━━━━━━━━━━━━━━━\n"
+            result += "┃ Sokak Sorgu Sonuçları:\n"
+            
+            for item in data['Veri']:
+                result += f"┃ ➥ Kimlik No: {item.get('KimlikNo', 'Bilinmiyor')}\n"
+                result += f"┃ ➥ Adı Soyadı: {item.get('AdiSoyadi', 'Bilinmiyor')}\n"
+                result += f"┃ ➥ Doğum Yeri: {item.get('DogumYeri', 'Bilinmiyor')}\n"
+                result += f"┃ ➥ İkametgah: {item.get('Ikametgah', 'Bilinmiyor')}\n"
+                result += "┃\n"
+            
+            result += "╰━━━━━━━━━━━━━━━━━━━━━"
 
-        if len(result) < 4000:
-            bot.send_message(message.chat.id, result)
+            # Mesaj 4000 karakterden kısa ise direkt mesaj olarak gönder
+            if len(result) < 4000:
+                bot.send_message(message.chat.id, result)
+            else:
+                # Veri fazla uzun ise dosya olarak gönder
+                with open('sokaktum_results.txt', 'w', encoding='utf-8') as f:
+                    f.write(result)
+                with open('sokaktum_results.txt', 'rb') as f:
+                    bot.send_document(message.chat.id, f)
         else:
-            with open('sokaktum_results.txt', 'w') as f:
-                f.write(result)
-            with open('sokaktum_results.txt', 'rb') as f:
-                bot.send_document(message.chat.id, f)
-    else:
-        bot.send_message(message.chat.id, "Veri bulunamadı.")
+            bot.send_message(message.chat.id, "Veri bulunamadı.")
 
-
-
+    except Exception as e:
+        bot.send_message(message.chat.id, f"Bir hata oluştu: {str(e)}")
 
 
 
