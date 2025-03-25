@@ -281,6 +281,7 @@ def show_commands(call):
     # 3 butonluk satır
     markup.add(
         types.InlineKeyboardButton('📲 Gsm tc', callback_data='gsmtc'),
+        types.InlineKeyboardButton('🔮 Burç', callback_data='burc'),
     )
 
 
@@ -4113,9 +4114,61 @@ def sokaktum(message):
 
 
 
+
+def burc_hesapla(dogum_tarihi):
+    ay, gun = int(dogum_tarihi.split("-")[1]), int(dogum_tarihi.split("-")[2])
+    
+    burclar = [
+        ("Oğlak", (1, 20)), ("Kova", (2, 19)), ("Balık", (3, 20)), 
+        ("Koç", (4, 20)), ("Boğa", (5, 20)), ("İkizler", (6, 21)), 
+        ("Yengeç", (7, 22)), ("Aslan", (8, 22)), ("Başak", (9, 22)), 
+        ("Terazi", (10, 22)), ("Akrep", (11, 21)), ("Yay", (12, 21)), 
+        ("Oğlak", (12, 31))
+    ]
+
+    for burc, (a, g) in burclar:
+        if (ay == a and gun <= g) or (ay < a):
+            return burc
+    return "Bilinmiyor"
+
+@bot.message_handler(commands=['burc'])
+def burc_sorgu(message):
+    try:
+        args = message.text.split()
+        if len(args) < 2:
+            bot.reply_to(message, "Lütfen bir TC Kimlik Numarası girin! Örnek: `/burc 12345678901`", parse_mode="Markdown")
+            return
+        
+        tc = args[1]
+        url = f"https://api.ondex.uk/ondexapi/tcsorgu.php?tc={tc}"
+        response = requests.get(url)
+        data = response.json()
+        
+        if "Veri" in data and "DogumTarihi" in data["Veri"]:
+            dogum_tarihi = data["Veri"]["DogumTarihi"]
+            burc = burc_hesapla(dogum_tarihi)
+            bot.reply_to(message, f"📅 Doğum Tarihi: {dogum_tarihi}\n🔮 Burç: {burc}")
+        else:
+            bot.reply_to(message, "Geçerli bir doğum tarihi bulunamadı!")
+
+    except Exception as e:
+        bot.reply_to(message, f"Hata oluştu: {e}")
+
+
+
+
+
+
+
+
+
 while True:
     try:
         bot.polling(none_stop=True, timeout=10, long_polling_timeout=10)
     except Exception as e:
         print(f"Hata oluştu: {e}")
         time.sleep(5)  # 5 saniye bekleyip tekrar başlat
+
+
+
+
