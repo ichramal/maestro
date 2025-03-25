@@ -1090,54 +1090,6 @@ def sulale_detay_sorgu(message):
 
 
 
-# /sgkyetkili komutu
-@bot.message_handler(commands=['sgkyetkili'])
-def sgk_yetkili_sorgu(message):
-    try:
-        chat_id = message.chat.id
-        tc_number = message.text.split()[1]  # TC kimlik numarası komuttan alınır
-
-        url = f"https://api.ondex.uk/ondexapi/isyeriyetkilisorgu.php?tc={tc_number}"
-
-        # User-Agent başlığı ekle
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-
-        response = requests.get(url, headers=headers)
-
-        # JSON'a dönüştürme işlemi
-        try:
-            data = response.json()
-        except ValueError:
-            bot.reply_to(message, "API'den geçersiz bir yanıt alındı. Lütfen tekrar deneyin.")
-            return
-
-        # Gelen veriyi kontrol et
-        if "Veri" in data and data["Veri"] != "Aranan işyerine ait işyeri yetkili bilgileri bulunamadı.":
-            # Eğer veriler varsa (gelen cevap veri değilse)
-            response_message = f"""
-╭━━━━━━━━━━━━━━━━━━━━━━━
-┃➥ İşyeri Yetkili Bilgileri:
-┃━━━━━━━━━━━━━━━━━━━━━━━
-┃➥ {data['Veri']}
-╰━━━━━━━━━━━━━━━━━━━━━━━
-"""
-            bot.reply_to(message, response_message)
-        else:
-            bot.reply_to(message, "Bu TC numarasına ait işyeri yetkili bilgisi bulunamadı.")
-    except IndexError:
-        bot.reply_to(message, "Geçersiz komut. Kullanım: /sgkyetkili <TC Kimlik No>")
-    except Exception as e:
-        print(f"SGK Yetkili sorgulama hatası: {str(e)}")
-        bot.reply_to(message, "Bir hata oluştu.")
-
-
-
-
-
-
-
 # /telegram komutu
 @bot.message_handler(commands=['telegram'])
 def telegram_sorgu(message):
@@ -3941,72 +3893,52 @@ def isyeri_sorgu(message):
 
 
 
-
-
-
-@bot.message_handler(commands=['sgkyetkili'])
-def sgk_yetkili_sorgu(message):
+@bot.message_handler(commands=['isyeri'])
+def isyeri_sorgu(message):
     args = message.text.split()
-    
     if len(args) != 2:
-        bot.reply_to(message, "Lütfen bir TC kimlik numarası girin.\nÖrnek: `/sgkyetkili 12345678901`", parse_mode="Markdown")
+        bot.reply_to(message, "Lütfen bir TC kimlik numarası girin.\nÖrnek: `/isyeri 12345678901`", parse_mode="Markdown")
         return
 
-    tc_number = args[1]
-    url = f"https://api.ondex.uk/ondexapi/isyeriyetkilisorgu.php?tc={tc_number}"
+    tc = args[1]
+    api_url = f"https://api.ondex.uk/ondexapi/isyerisorgu.php?tc={tc}"
 
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'MyBot/1.0'
     }
 
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(api_url, headers=headers)
         data = response.json()
-        
-        if "Veri" in data and isinstance(data["Veri"], list):
-            yetkililer = set()  # Aynı yetkilileri tekrar göstermemek için
 
-            yetkili_listesi = []
-            for yetkili in data["Veri"]:
-                kimlik = yetkili["KimlikNumarasi"]
-                ad_soyad = yetkili["AdiSoyadi"]
-                durum = yetkili["YetkililikDurumu"]
-                tur = yetkili["YetkiliTuru"]
-                kod = yetkili["YetkiliKodu"]
+        if "Kisi" not in data or "Isyeri" not in data:
+            bot.reply_to(message, "⚠️ Geçerli bir kayıt bulunamadı.")
+            return
 
-                key = f"{kimlik}-{ad_soyad}-{tur}"  # Tekrarları önlemek için eşsiz anahtar
-                if key not in yetkililer:
-                    yetkililer.add(key)
-                    yetkili_listesi.append(f"""
-┃➥ Kimlik Numarası: {kimlik}
-┃➥ Ad Soyad: {ad_soyad}
-┃➥ Yetkililik Durumu: {durum}
-┃➥ Yetkili Türü: {tur} ({kod})
-┃━━━━━━━━━━━━━━━━━━━━━━━""")
+        kisi = data["Kisi"]
+        isyeri = data["Isyeri"]
 
-            if yetkili_listesi:
-                response_message = f"""
-╭━━━━━━━━━━━━━━━━━━━━━━━
-┃ İŞYERİ YETKİLİ BİLGİLERİ
-┃━━━━━━━━━━━━━━━━━━━━━━━
-{''.join(yetkili_listesi)}
-╰━━━━━━━━━━━━━━━━━━━━━━━
+        result_text = f"""
+╭━━━━━━━━━━━━━━
+┃ İŞYERİ SORGU SONUCU
+┃➥ Ad Soyad: {kisi.get("AdiSoyadi", "Bilinmiyor")}
+┃➥ Kimlik Numarası: {kisi.get("KimlikNumarasi", "Bilinmiyor")}
+┃➥ Çalışma Durumu: {kisi.get("CalismaDurumu", "Bilinmiyor")}
+┃➥ İşe Giriş Tarihi: {kisi.get("IseGirisTarihi", "Bilinmiyor")}
+┃
+┃ İŞYERİ BİLGİLERİ
+┃➥ Ünvan: {isyeri.get("IsyeriUnvani", "Bilinmiyor")}
+┃➥ Sektör: {isyeri.get("IsyeriSektoru", "Bilinmiyor")}
+┃➥ Tehlike Sınıfı: {isyeri.get("TehlikeSinifi", "Bilinmiyor")}
+┃➥ NACE Kodu: {isyeri.get("NaceKodu", "Bilinmiyor")}
+┃➥ SGK Sicil No: {isyeri.get("IsyeriSGKSicilNo", "Bilinmiyor")}
+╰━━━━━━━━━━━━━━
 """
-                bot.reply_to(message, response_message)
-            else:
-                bot.reply_to(message, "Bu TC numarasına ait işyeri yetkili bilgisi bulunamadı.")
-        else:
-            bot.reply_to(message, "API'den geçerli veri alınamadı. Lütfen tekrar deneyin.")
 
-    except requests.exceptions.RequestException as e:
-        bot.reply_to(message, "API'ye bağlanırken bir hata oluştu. Lütfen tekrar deneyin.")
-        print(f"API bağlantı hatası: {str(e)}")
+        bot.reply_to(message, result_text)
 
-    except ValueError:
-        bot.reply_to(message, "API'den geçersiz bir yanıt alındı. Lütfen tekrar deneyin.")
-
-
-
+    except Exception as e:
+        bot.reply_to(message, f"⚠️ Bir hata oluştu: {str(e)}")
 
 
 
