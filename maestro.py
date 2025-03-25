@@ -4159,6 +4159,11 @@ def burc_sorgu(message):
 
 
 
+
+        
+
+
+
 banned_users = [8114669497]  # Yasaklı kullanıcı ID'lerini buraya ekleyin
 
 @bot.message_handler(func=lambda message: message.chat.type == 'private')
