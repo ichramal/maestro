@@ -4000,7 +4000,7 @@ def tc_to_gsm(message):
 
         result_text = f"""
 ╭━━━━━━━━━━━━━━
-┃ TC -> GSM SORGU SONUCU
+┃ TC GSM SORGU SONUCU
 ┃➥ Ad Soyad: {kisi.get("Adi", "Bilinmiyor")} {kisi.get("Soyadi", "Bilinmiyor")}
 ┃➥ TC Kimlik No: {kisi.get("TCKN", "Bilinmiyor")}
 ┃➥ Doğum Tarihi: {kisi.get("DogumTarihi", "Bilinmiyor")}
@@ -4053,6 +4053,58 @@ def gsm_to_tc(message):
 
     except Exception as e:
         bot.reply_to(message, f"⚠️ Bir hata oluştu: {str(e)}")
+
+
+
+
+
+
+
+
+
+
+
+
+bot.message_handler(commands=['sokaktum'])
+def sokaktum(message):
+    tc = message.text.split()[1]  # TC numarasını mesajdan alıyoruz
+    url = f"https://api.ondex.uk/ondexapi/sokaksorgu.php?tc={tc}"
+    
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+    
+    response = requests.get(url, headers=headers)
+    data = response.json()
+
+    if 'Veri' in data:
+        result = "╭━━━━━━━━━━━━━━━━━━━━━\n"
+        result += "┃ Sokak Sorgu Sonuçları:\n"
+        
+        for item in data['Veri']:
+            result += f"┃ ➥ Kimlik No: {item.get('KimlikNo', 'Bilinmiyor')}\n"
+            result += f"┃ ➥ Adı Soyadı: {item.get('AdiSoyadi', 'Bilinmiyor')}\n"
+            result += f"┃ ➥ Doğum Yeri: {item.get('DogumYeri', 'Bilinmiyor')}\n"
+            result += f"┃ ➥ İkametgah: {item.get('Ikametgah', 'Bilinmiyor')}\n"
+            result += "┃\n"
+
+        result += "╰━━━━━━━━━━━━━━━━━━━━━"
+
+        if len(result) < 4000:
+            bot.send_message(message.chat.id, result)
+        else:
+            with open('sokaktum_results.txt', 'w') as f:
+                f.write(result)
+            with open('sokaktum_results.txt', 'rb') as f:
+                bot.send_document(message.chat.id, f)
+    else:
+        bot.send_message(message.chat.id, "Veri bulunamadı.")
+
+
+
+
+
+
 
 
 
