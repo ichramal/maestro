@@ -1128,45 +1128,45 @@ def telegram_sorgu(message):
 
 
 
-
-
-
 @bot.message_handler(commands=['ip'])
 def ip_info(message):
     args = message.text.split(maxsplit=1)
-    if len(args) > 1:
-        ip_address = args[1]
-        try:
-            response = requests.get(f"http://ip-api.com/json/{ip_address}")
-            if response.status_code == 200:
-                ip_info = response.json()
-                if ip_info["status"] == "success":
-                    # Daha okunabilir bir mesaj formatı
-                    formatted_message = (
-                        f"🌐 **IP Bilgileri** 🌐\n"
-                        f"• **IP Adresi:** {ip_info.get('query')}\n"
-                        f"• **Ülke:** {ip_info.get('country')} ({ip_info.get('countryCode')})\n"
-                        f"• **Bölge:** {ip_info.get('regionName')} ({ip_info.get('region')})\n"
-                        f"• **Şehir:** {ip_info.get('city')}\n"
-                        f"• **Posta Kodu:** {ip_info.get('zip')}\n"
-                        f"• **Zaman Dilimi:** {ip_info.get('timezone')}\n"
-                        f"• **ISP:** {ip_info.get('isp')}\n"
-                        f"• **Organizasyon:** {ip_info.get('org')}\n"
-                        f"• **Koordinatlar:** {ip_info.get('lat')}, {ip_info.get('lon')}\n"
-                        f"• **AS Bilgisi:** {ip_info.get('as')}\n"
-                    )
-                    bot.send_message(message.chat.id, formatted_message, parse_mode="Markdown")
-                else:
-                    bot.send_message(message.chat.id, "IP bilgisi bulunamadı.")
+    
+    # IP adresi girilmemişse, komutun sonucunu boş bırak
+    if len(args) <= 1 or not args[1].strip():
+        return  # Hiçbir şey göndermemek için sadece return kullanıyoruz.
+
+    ip_address = args[1]
+    
+    try:
+        response = requests.get(f"http://ip-api.com/json/{ip_address}")
+        if response.status_code == 200:
+            ip_info = response.json()
+            if ip_info["status"] == "success":
+                # Daha okunabilir bir mesaj formatı
+                formatted_message = (
+                    f"🌐 **IP Bilgileri** 🌐\n"
+                    f"• **IP Adresi:** {ip_info.get('query')}\n"
+                    f"• **Ülke:** {ip_info.get('country')} ({ip_info.get('countryCode')})\n"
+                    f"• **Bölge:** {ip_info.get('regionName')} ({ip_info.get('region')})\n"
+                    f"• **Şehir:** {ip_info.get('city')}\n"
+                    f"• **Posta Kodu:** {ip_info.get('zip')}\n"
+                    f"• **Zaman Dilimi:** {ip_info.get('timezone')}\n"
+                    f"• **ISP:** {ip_info.get('isp')}\n"
+                    f"• **Organizasyon:** {ip_info.get('org')}\n"
+                    f"• **Koordinatlar:** {ip_info.get('lat')}, {ip_info.get('lon')}\n"
+                    f"• **AS Bilgisi:** {ip_info.get('as')}\n"
+                )
+                bot.send_message(message.chat.id, formatted_message, parse_mode="Markdown")
             else:
-                bot.send_message(message.chat.id, f"API hatası: {response.status_code}")
-        except Exception as e:
-            bot.send_message(message.chat.id, f"API isteği sırasında bir hata oluştu: {e}")
-    else:
-        bot.send_message(message.chat.id, "Lütfen bir IP adresi girin.")
+                bot.send_message(message.chat.id, "IP bilgisi bulunamadı.")
+        else:
+            bot.send_message(message.chat.id, f"API hatası: {response.status_code}")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"API isteği sırasında bir hata oluştu: {e}")
 
 
-
+        
 
 @bot.message_handler(commands=['hava2'])
 def get_weather(message):
@@ -3947,7 +3947,7 @@ def isyeri_sorgu(message):
 
 
 
-        
+
 
 while True:
     try:
