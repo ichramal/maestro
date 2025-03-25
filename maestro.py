@@ -281,7 +281,6 @@ def show_commands(call):
     # 3 butonluk satır
     markup.add(
         types.InlineKeyboardButton('📲 Gsm tc', callback_data='gsmtc'),
-        types.InlineKeyboardButton('💼 Gsm detay', callback_data='gsmdetay'),
     )
 
 
