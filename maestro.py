@@ -3973,6 +3973,91 @@ def sgk_yetkili_sorgu(message):
 
 
 
+
+
+
+
+@bot.message_handler(commands=['tcgsm'])
+def tc_to_gsm(message):
+    args = message.text.split()
+    if len(args) != 2:
+        bot.reply_to(message, "Lütfen bir TC kimlik numarası girin.\nÖrnek: `/tcgsm 12345678901`", parse_mode="Markdown")
+        return
+
+    tc = args[1]
+    api_url = f"https://api.ondex.uk/ondexapi/tcgsmprosorgu.php?tc={tc}"
+
+    try:
+        response = requests.get(api_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+        data = response.json()
+
+        if "Kisi" not in data or "GSM" not in data:
+            bot.reply_to(message, "⚠️ Geçerli bir kayıt bulunamadı.")
+            return
+
+        kisi = data["Kisi"]
+        gsm_list = data["GSM"]
+
+        result_text = f"""
+╭━━━━━━━━━━━━━━
+┃ TC -> GSM SORGU SONUCU
+┃➥ Ad Soyad: {kisi.get("Adi", "Bilinmiyor")} {kisi.get("Soyadi", "Bilinmiyor")}
+┃➥ TC Kimlik No: {kisi.get("TCKN", "Bilinmiyor")}
+┃➥ Doğum Tarihi: {kisi.get("DogumTarihi", "Bilinmiyor")}
+┃➥ Anne Adı: {kisi.get("AnneAdi", "Bilinmiyor")}
+┃➥ Baba Adı: {kisi.get("BabaAdi", "Bilinmiyor")}
+┃➥ Nüfus: {kisi.get("NufusIl", "Bilinmiyor")}, {kisi.get("NufusIlce", "Bilinmiyor")}
+┃➥ Uyruk: {kisi.get("Uyruk", "Bilinmiyor")}
+┃➥ GSM Numaraları:
+┃   {', '.join(gsm_list[0]) if gsm_list else "Bilinmiyor"}
+╰━━━━━━━━━━━━━━
+"""
+        bot.reply_to(message, result_text)
+
+    except Exception as e:
+        bot.reply_to(message, f"⚠️ Bir hata oluştu: {str(e)}")
+
+
+@bot.message_handler(commands=['gsmtc'])
+def gsm_to_tc(message):
+    args = message.text.split()
+    if len(args) != 2:
+        bot.reply_to(message, "Lütfen bir GSM numarası girin.\nÖrnek: `/gsmtc 5386086868`", parse_mode="Markdown")
+        return
+
+    gsm = args[1]
+    api_url = f"https://api.ondex.uk/ondexapi/gsmtcprosorgu.php?gsm={gsm}"
+
+    try:
+        response = requests.get(api_url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+        data = response.json()
+
+        if "Kisi" not in data:
+            bot.reply_to(message, "⚠️ Geçerli bir kayıt bulunamadı.")
+            return
+
+        kisi = data["Kisi"][0]
+
+        result_text = f"""
+╭━━━━━━━━━━━━━━
+┃ GSM -> TC SORGU SONUCU
+┃➥ Ad Soyad: {kisi.get("Adi", "Bilinmiyor")} {kisi.get("Soyadi", "Bilinmiyor")}
+┃➥ TC Kimlik No: {kisi.get("TCKN", "Bilinmiyor")}
+┃➥ Doğum Tarihi: {kisi.get("DogumTarihi", "Bilinmiyor")}
+┃➥ Anne Adı: {kisi.get("AnneAdi", "Bilinmiyor")}
+┃➥ Baba Adı: {kisi.get("BabaAdi", "Bilinmiyor")}
+┃➥ Nüfus: {kisi.get("NufusIl", "Bilinmiyor")}, {kisi.get("NufusIlce", "Bilinmiyor")}
+╰━━━━━━━━━━━━━━
+"""
+        bot.reply_to(message, result_text)
+
+    except Exception as e:
+        bot.reply_to(message, f"⚠️ Bir hata oluştu: {str(e)}")
+
+
+
+
+
 while True:
     try:
         bot.polling(none_stop=True, timeout=10, long_polling_timeout=10)
