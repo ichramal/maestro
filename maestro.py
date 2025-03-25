@@ -1132,10 +1132,10 @@ def telegram_sorgu(message):
 def ip_info(message):
     args = message.text.split(maxsplit=1)
     
-    # IP adresi girilmemişse, komutun sonucunu boş bırak
-    if len(args) <= 1 or not args[1].strip():
-        return  # Hiçbir şey göndermemek için sadece return kullanıyoruz.
-
+    # Eğer IP adresi sağlanmamışsa veya geçersiz bir şey girildiyse, hiçbir şey yapılmasın
+    if len(args) <= 1 or not args[1].strip() or not valid_ip(args[1]):
+        return  # Hiçbir şey göndermemek için return kullanıyoruz.
+    
     ip_address = args[1]
     
     try:
@@ -1165,8 +1165,14 @@ def ip_info(message):
     except Exception as e:
         bot.send_message(message.chat.id, f"API isteği sırasında bir hata oluştu: {e}")
 
+# Geçerli bir IP adresi formatını kontrol eden fonksiyon
+def valid_ip(ip):
+    # IP adresi formatı: xxx.xxx.xxx.xxx (sadece rakamlardan oluşan 4 oktet)
+    regex = r"^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+    return bool(re.match(regex, ip))
 
-        
+
+
 
 @bot.message_handler(commands=['hava2'])
 def get_weather(message):
