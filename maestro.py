@@ -200,7 +200,7 @@ def handle_tools_query(call):
         new_text = "/qr (text) yazarak qr kod alabilirsiniz"
     elif call.data == 'dcgen':
         new_text = "/dcgen yazarak nitro gen kullana bilirsiniz,günlük 3 kez ücretsiz"
-
+    
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("↩️ Geri", callback_data="tools"))
 
@@ -259,6 +259,16 @@ def show_commands(call):
     )
 
 
+    
+
+    # 3 butonluk satır
+    markup.add(
+        types.InlineKeyboardButton('👪 Anne Baba', callback_data='annebaba'),
+        types.InlineKeyboardButton('🏡 Hane', callback_data='hane')
+    )
+
+
+
 
  # 3 butonluk satır
     markup.add(
@@ -276,15 +286,6 @@ def show_commands(call):
 
 
 
-    # 3 butonluk satır
-    markup.add(
-        types.InlineKeyboardButton('👪 Anne Baba', callback_data='annebaba'),
-        types.InlineKeyboardButton('🏡 Hane', callback_data='hane')
-    )
-
-
-    
-
 
     markup.add(
        types.InlineKeyboardButton('👔 İşyeri Ark.', callback_data='isyeriarkadasi'),
@@ -293,13 +294,22 @@ def show_commands(call):
 
     )
 
+    
 
+    markup.add(
+       types.InlineKeyboardButton('🏢 İş Yeri', callback_data='isyeri')
+
+    )
 
     markup.add(
        types.InlineKeyboardButton('📜 Tapu', callback_data='tapu'),
        types.InlineKeyboardButton('🗺️ Parsel', callback_data='parsel')
 
     )
+
+
+
+
 
 
     markup.add(
@@ -327,6 +337,7 @@ def show_commands(call):
 
 
 
+
     # Komutlar menüsünde ana menüye dönüş butonu (opsiyonel)
     markup.add(types.InlineKeyboardButton("↩️ Geri", callback_data="back_to_main"))
     bot.edit_message_text(
@@ -341,7 +352,7 @@ def show_commands(call):
     "aile", "annebaba", "cocuk", "bin", "hane", "sulale", "sgkyetkili",
     "operator", "email", "cc", "telegram", "ip", "tapu", "parsel", "operatorpro",
     "kuzen", "isyeriarkadasi", "sorgupro", "kizlik", "hikaye", "apartman", "parsel", "operatorpro",
-    "premiumsorgu","ttnet","universite","burc"
+    "premiumsorgu","ttnet","universite","burc","isyeri"
 ])
 def handle_command_help(call):
     help_text = "Bu komut hakkında bilgi bulunamadı."  # Varsayılan mesaj ekledik
@@ -398,6 +409,8 @@ def handle_command_help(call):
         help_text = "/universite (TC) yazarak universite sorgu yap."
     elif call.data == 'burc':
         help_text = "/burc (TC) yazarak burcunu sorgu yap."
+    elif call.data == 'isyeri':
+        new_text = "/isyeri işyeri bilgilerini alabilirsiniz"
 
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("↩️ Geri", callback_data="commands"))
@@ -3863,6 +3876,135 @@ def dns_sorgu(message):
     except Exception as e:
         bot.reply_to(message, "⚠️ Bir hata oluştu.")
         print(f"DNS sorgu hatası: {e}")
+
+
+
+
+
+
+
+
+
+@bot.message_handler(commands=['isyeri'])
+def isyeri_sorgu(message):
+    args = message.text.split()
+    if len(args) != 2:
+        bot.reply_to(message, "Lütfen bir TC kimlik numarası girin.\nÖrnek: `/isyeri 12345678901`", parse_mode="Markdown")
+        return
+
+    tc = args[1]
+    api_url = f"https://api.ondex.uk/ondexapi/isyerisorgu.php?tc={tc}"
+
+    try:
+        response = requests.get(api_url)
+        data = response.json()
+
+        if "Kisi" not in data or "Isyeri" not in data:
+            bot.reply_to(message, "⚠️ Geçerli bir kayıt bulunamadı.")
+            return
+
+        kisi = data["Kisi"]
+        isyeri = data["Isyeri"]
+
+        result_text = f"""
+╭━━━━━━━━━━━━━━
+┃ İŞYERİ SORGU SONUCU
+┃➥ Ad Soyad: {kisi.get("AdiSoyadi", "Bilinmiyor")}
+┃➥ Kimlik Numarası: {kisi.get("KimlikNumarasi", "Bilinmiyor")}
+┃➥ Çalışma Durumu: {kisi.get("CalismaDurumu", "Bilinmiyor")}
+┃➥ İşe Giriş Tarihi: {kisi.get("IseGirisTarihi", "Bilinmiyor")}
+┃
+┃ İŞYERİ BİLGİLERİ
+┃➥ Ünvan: {isyeri.get("IsyeriUnvani", "Bilinmiyor")}
+┃➥ Sektör: {isyeri.get("IsyeriSektoru", "Bilinmiyor")}
+┃➥ Tehlike Sınıfı: {isyeri.get("TehlikeSinifi", "Bilinmiyor")}
+┃➥ NACE Kodu: {isyeri.get("NaceKodu", "Bilinmiyor")}
+┃➥ SGK Sicil No: {isyeri.get("IsyeriSGKSicilNo", "Bilinmiyor")}
+╰━━━━━━━━━━━━━━
+"""
+
+        bot.reply_to(message, result_text)
+
+    except Exception as e:
+        bot.reply_to(message, f"⚠️ Bir hata oluştu: {str(e)}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@bot.message_handler(commands=['sgkyetkili'])
+def sgk_yetkili_sorgu(message):
+    args = message.text.split()
+    
+    if len(args) != 2:
+        bot.reply_to(message, "Lütfen bir TC kimlik numarası girin.\nÖrnek: `/sgkyetkili 12345678901`", parse_mode="Markdown")
+        return
+
+    tc_number = args[1]
+    url = f"https://api.ondex.uk/ondexapi/isyeriyetkilisorgu.php?tc={tc_number}"
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    }
+
+    try:
+        response = requests.get(url, headers=headers)
+        data = response.json()
+        
+        if "Veri" in data and isinstance(data["Veri"], list):
+            yetkililer = set()  # Aynı yetkilileri tekrar göstermemek için
+
+            yetkili_listesi = []
+            for yetkili in data["Veri"]:
+                kimlik = yetkili["KimlikNumarasi"]
+                ad_soyad = yetkili["AdiSoyadi"]
+                durum = yetkili["YetkililikDurumu"]
+                tur = yetkili["YetkiliTuru"]
+                kod = yetkili["YetkiliKodu"]
+
+                key = f"{kimlik}-{ad_soyad}-{tur}"  # Tekrarları önlemek için eşsiz anahtar
+                if key not in yetkililer:
+                    yetkililer.add(key)
+                    yetkili_listesi.append(f"""
+┃➥ Kimlik Numarası: {kimlik}
+┃➥ Ad Soyad: {ad_soyad}
+┃➥ Yetkililik Durumu: {durum}
+┃➥ Yetkili Türü: {tur} ({kod})
+┃━━━━━━━━━━━━━━━━━━━━━━━""")
+
+            if yetkili_listesi:
+                response_message = f"""
+╭━━━━━━━━━━━━━━━━━━━━━━━
+┃ İŞYERİ YETKİLİ BİLGİLERİ
+┃━━━━━━━━━━━━━━━━━━━━━━━
+{''.join(yetkili_listesi)}
+╰━━━━━━━━━━━━━━━━━━━━━━━
+"""
+                bot.reply_to(message, response_message)
+            else:
+                bot.reply_to(message, "Bu TC numarasına ait işyeri yetkili bilgisi bulunamadı.")
+        else:
+            bot.reply_to(message, "API'den geçerli veri alınamadı. Lütfen tekrar deneyin.")
+
+    except requests.exceptions.RequestException as e:
+        bot.reply_to(message, "API'ye bağlanırken bir hata oluştu. Lütfen tekrar deneyin.")
+        print(f"API bağlantı hatası: {str(e)}")
+
+    except ValueError:
+        bot.reply_to(message, "API'den geçersiz bir yanıt alındı. Lütfen tekrar deneyin.")
+
 
 
 
