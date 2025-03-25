@@ -454,63 +454,58 @@ def is_user_member(user_id, chat_id):
 
 
 
-
-
-
 @bot.message_handler(commands=['annebaba'])
-def anne_baba_sorgu(message):
+def annesibabasi(message):
     try:
-        chat_id = message.chat.id
-        
-        # Komutun doğru yazıldığından emin olun
+        # TC numarasını mesajdan alıyoruz
         if len(message.text.split()) < 2:
-            bot.reply_to(message, "Geçersiz komut. Kullanım: /annebaba 12345678901")
+            bot.send_message(message.chat.id, "Lütfen bir TC numarası girin. Örnek: /annebaba 12345678901")
             return
-        
-        tc_number = message.text.split()[1]  # TC kimlik numarası komuttan alınır
 
-        url = f"https://siberizim.online/esrarkes/annebabasorgu/api.php?tc={tc_number}"
+        tc = message.text.split()[1]
+        
+        # API URL'si
+        url = f"https://api.ondex.uk/ondexapi/ailesorgu.php?tc={tc}"
+        
+        # Header bilgileri
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
-        response = requests.get(url, headers=headers)
-
-        # API yanıtını kontrol et
-        if response.status_code != 200:
-            bot.reply_to(message, "API'ye bağlanırken bir sorun oluştu.")
-            return
-
-        # API yanıtını JSON'a çevir
-        try:
-            data = response.json()
-        except ValueError:
-            bot.reply_to(message, "Geçerli bir yanıt alınamadı.")
-            return
         
-        # Cevapta veri var mı kontrol et
-        if "data" in data and len(data["data"]) > 1:
-            anne_baba_data = data["data"][1]  # Anne ve Baba bilgisi
+        # API'den veri çekme
+        response = requests.get(url, headers=headers)
+        
+        # API cevabını JSON formatında alma
+        data = response.json()
 
-            anne_baba_message = f"""
-╭━━━━━━━━━━━━━━
-┃ 👩‍🦰👨‍🦰 **Anne ve Baba Bilgileri**:
-┃ ➥ **Anne Adı:** {anne_baba_data.get("ANNEADI", "Bilinmiyor")}
-┃ ➥ **Anne TC:** {anne_baba_data.get("ANNETC", "Bilinmiyor")}
-┃ ➥ **Baba Adı:** {anne_baba_data.get("BABAADI", "Bilinmiyor")}
-┃ ➥ **Baba TC:** {anne_baba_data.get("BABATC", "Bilinmiyor")}
-╰━━━━━━━━━━━━━━
-"""
+        # Veriyi işleme
+        if 'Veri' in data:
+            result = "╭━━━━━━━━━━━━━━━━━━━━━\n"
+            result += "┃ Aile Sorgu Sonuçları:\n"
+            
+            for item in data['Veri']:
+                if item.get('Yakinlik') in ['Annesi', 'Babası']:  # Yalnızca anne ve baba bilgileri
+                    result += f"┃ ➥ {item.get('Yakinlik')}: {item.get('Adi', 'Bilinmiyor')} {item.get('Soyadi', 'Bilinmiyor')}\n"
+                    result += f"┃ ➥ TCKN: {item.get('TCKN', 'Bilinmiyor')}\n"
+                    result += f"┃ ➥ Doğum Tarihi: {item.get('DogumTarihi', 'Bilinmiyor')}\n"
+                    result += "┃\n"
+            
+            result += "╰━━━━━━━━━━━━━━━━━━━━━"
 
-            bot.send_message(chat_id, anne_baba_message, parse_mode="Markdown")
+            # Mesaj 4000 karakterden kısa ise direkt mesaj olarak gönder
+            if len(result) < 4000:
+                bot.send_message(message.chat.id, result)
+            else:
+                # Veri fazla uzun ise dosya olarak gönder
+                with open('annebaba_results.txt', 'w', encoding='utf-8') as f:
+                    f.write(result)
+                with open('annebaba_results.txt', 'rb') as f:
+                    bot.send_document(message.chat.id, f)
         else:
-            bot.reply_to(message, "Bu TC numarasına ait anne ve baba bilgisi bulunamadı.")
-    
-    except IndexError:
-        bot.reply_to(message, "Geçersiz komut. Kullanım: /annebaba 12345678901")
-    
+            bot.send_message(message.chat.id, "Veri bulunamadı.")
+
     except Exception as e:
-        print(f"Anne ve Baba sorgulama hatası: {str(e)}")
-        bot.reply_to(message, "Bir hata oluştu.")
+        bot.send_message(message.chat.id, f"Bir hata oluştu: {str(e)}")
 
 
 
