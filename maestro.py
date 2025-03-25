@@ -4160,7 +4160,6 @@ def burc_sorgu(message):
     except Exception as e:
         bot.reply_to(message, f"Hata oluştu: {e}")
 
-bot.polling()
 
 
 
