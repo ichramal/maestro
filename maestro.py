@@ -4111,22 +4111,21 @@ def sokaktum(message):
 
 
 
-
 def burc_hesapla(dogum_tarihi):
     ay, gun = int(dogum_tarihi.split("-")[1]), int(dogum_tarihi.split("-")[2])
     
     burclar = [
-        ("Oğlak", (1, 20)), ("Kova", (2, 19)), ("Balık", (3, 20)), 
-        ("Koç", (4, 20)), ("Boğa", (5, 20)), ("İkizler", (6, 21)), 
-        ("Yengeç", (7, 22)), ("Aslan", (8, 22)), ("Başak", (9, 22)), 
-        ("Terazi", (10, 22)), ("Akrep", (11, 21)), ("Yay", (12, 21)), 
-        ("Oğlak", (12, 31))
+        ("Oğlak", (1, 20), "♑"), ("Kova", (2, 19), "♒"), ("Balık", (3, 20), "♓"), 
+        ("Koç", (4, 20), "♈"), ("Boğa", (5, 20), "♉"), ("İkizler", (6, 21), "♊"), 
+        ("Yengeç", (7, 22), "♋"), ("Aslan", (8, 22), "♌"), ("Başak", (9, 22), "♍"), 
+        ("Terazi", (10, 22), "♎"), ("Akrep", (11, 21), "♏"), ("Yay", (12, 21), "♐"), 
+        ("Oğlak", (12, 31), "♑")
     ]
 
-    for burc, (a, g) in burclar:
+    for burc, (a, g), emoji in burclar:
         if (ay == a and gun <= g) or (ay < a):
-            return burc
-    return "Bilinmiyor"
+            return burc, emoji
+    return "Bilinmiyor", "❓"
 
 @bot.message_handler(commands=['burc'])
 def burc_sorgu(message):
@@ -4148,18 +4147,20 @@ def burc_sorgu(message):
         
         if "Veri" in data and "DogumTarihi" in data["Veri"]:
             dogum_tarihi = data["Veri"]["DogumTarihi"]
-            burc = burc_hesapla(dogum_tarihi)
-            bot.reply_to(message, f"📅 Doğum Tarihi: {dogum_tarihi}\n🔮 Burç: {burc}")
+            burc, emoji = burc_hesapla(dogum_tarihi)
+            bot.reply_to(message, f"""
+╭━━━━━━━━━━━━━━━━━━━━━
+┃📅 Doğum Tarihi {dogum_tarihi}
+┃🔮 Burç {burc} {emoji}
+╰━━━━━━━━━━━━━━━━━━━━━
+""")
         else:
             bot.reply_to(message, "Geçerli bir doğum tarihi bulunamadı!")
 
     except Exception as e:
         bot.reply_to(message, f"Hata oluştu: {e}")
 
-
-
-
-
+bot.polling()
 
 
 
