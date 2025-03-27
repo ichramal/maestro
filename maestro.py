@@ -38,33 +38,6 @@ def add_user(user_id):
 
 
 
-@bot.message_handler(commands=['duyuru'])
-def duyuru(message):
-    if message.from_user.id not in ADMINS:
-        bot.reply_to(message, "❌ Bu komutu sadece yöneticiler kullanabilir!")
-        return
-
-    text = message.text.replace("/duyuru", "").strip()
-    if not text:
-        bot.reply_to(message, "❌ Lütfen göndermek istediğiniz duyuruyu yazın. Örnek: `/duyuru Sistem bakımı yapılacaktır.`")
-        return
-
-    try:
-        with open(USERS_FILE, "r") as file:
-            users = file.read().splitlines()
-        
-        for user_id in users:
-            try:
-                bot.send_message(user_id, f"📢 **Duyuru:**\n{text}", parse_mode="Markdown")
-            except Exception as e:
-                print(f"{user_id} kullanıcısına mesaj gönderilemedi: {e}")
-
-        bot.reply_to(message, "✅ Duyuru başarıyla gönderildi!")
-
-    except FileNotFoundError:
-        bot.reply_to(message, "❌ Kullanıcı listesi bulunamadı!")
-
-
 
 # Bot Tokeninizi buraya girin
 BOT_TOKEN = "7601889695:AAFtV-nUPioYApM2NPtioGhHVvMo_3VCess"
@@ -4507,6 +4480,52 @@ def gsmtcpro(message):
 
     except Exception as e:
         bot.reply_to(message, f"⚠️ Bir hata oluştu: {str(e)}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@bot.message_handler(commands=['duyuru'])
+def duyuru(message):
+    if message.from_user.id not in ADMINS:
+        bot.reply_to(message, "❌ Bu komutu sadece yöneticiler kullanabilir!")
+        return
+
+    text = message.text.replace("/duyuru", "").strip()
+    if not text:
+        bot.reply_to(message, "❌ Lütfen göndermek istediğiniz duyuruyu yazın. Örnek: `/duyuru Sistem bakımı yapılacaktır.`")
+        return
+
+    try:
+        with open(USERS_FILE, "r") as file:
+            users = file.read().splitlines()
+        
+        for user_id in users:
+            try:
+                bot.send_message(user_id, f"📢 **Duyuru:**\n{text}", parse_mode="Markdown")
+            except Exception as e:
+                print(f"{user_id} kullanıcısına mesaj gönderilemedi: {e}")
+
+        bot.reply_to(message, "✅ Duyuru başarıyla gönderildi!")
+
+    except FileNotFoundError:
+        bot.reply_to(message, "❌ Kullanıcı listesi bulunamadı!")
+
+
+
+
 
 
 
