@@ -38,37 +38,31 @@ def add_user(user_id):
 
 
 
-# /duyuru komutu (Tüm kayıtlara mesaj gönderir)
 @bot.message_handler(commands=['duyuru'])
 def duyuru(message):
-    admin_id = message.chat.id  # Sadece adminin duyuru atmasını sağlarız
-    duyuru_mesaji = message.text.replace("/duyuru", "").strip()
+    if message.from_user.id not in ADMINS:
+        bot.reply_to(message, "❌ Bu komutu sadece yöneticiler kullanabilir!")
+        return
 
-    if not duyuru_mesaji:
-        bot.send_message(admin_id, "❌ Lütfen duyuru mesajınızı yazın. Örnek:\n`/duyuru Bu bir test mesajıdır.`")
+    text = message.text.replace("/duyuru", "").strip()
+    if not text:
+        bot.reply_to(message, "❌ Lütfen göndermek istediğiniz duyuruyu yazın. Örnek: `/duyuru Sistem bakımı yapılacaktır.`")
         return
 
     try:
         with open(USERS_FILE, "r") as file:
             users = file.read().splitlines()
-
-        if not users:
-            bot.send_message(admin_id, "⚠️ Henüz hiçbir kullanıcı kayıtlı değil.")
-            return
-
-        basarili = 0
+        
         for user_id in users:
             try:
-                bot.send_message(user_id, f"📢 **DUYURU:**\n\n{duyuru_mesaji}", parse_mode="Markdown")
-                basarili += 1
-            except Exception:
-                pass  # Kullanıcıya mesaj atılamazsa hata verme
+                bot.send_message(user_id, f"📢 **Duyuru:**\n{text}", parse_mode="Markdown")
+            except Exception as e:
+                print(f"{user_id} kullanıcısına mesaj gönderilemedi: {e}")
 
-        bot.send_message(admin_id, f"✅ Duyuru başarıyla {basarili} kullanıcıya gönderildi.")
+        bot.reply_to(message, "✅ Duyuru başarıyla gönderildi!")
 
-    except Exception as e:
-        bot.send_message(admin_id, f"❌ Bir hata oluştu: {str(e)}")
-
+    except FileNotFoundError:
+        bot.reply_to(message, "❌ Kullanıcı listesi bulunamadı!")
 
 
 
@@ -85,23 +79,10 @@ def start(message):
     user_id = message.from_user.id
     user_name = message.from_user.first_name
     chat_id = message.chat.id
-    first_name = message.from_user.first_name or "Bilinmiyor"
-    last_name = message.from_user.last_name or "Bilinmiyor"
-    username = message.from_user.username or "Yok"
-    language_code = message.from_user.language_code or "Bilinmiyor"
     add_user(chat_id)  # Kullanıcıyı kaydet
     channel_ids = [-1002326374972, -1002359512475]  # Kanal ID'lerini gerçek ID'lerle değiştirin
     current_hour = datetime.now().hour
-    
 
-    user_info = f"Chat ID: {chat_id}\nAd: {first_name} {last_name}\nKullanıcı Adı: @{username}\nDil: {language_code}\n\n"
-    
-
-    # Bilgileri user.txt'ye kaydet
-    with open("user.txt", "a", encoding="utf-8") as file:
-        file.write(user_info)
-        
-    
     def is_user_member_all(user_id, channel_ids):
         for channel_id in channel_ids:
             if not is_user_member(user_id, channel_id):
