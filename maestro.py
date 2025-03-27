@@ -272,7 +272,7 @@ def show_commands(call):
 
  # 3 butonluk satır
     markup.add(
-        types.InlineKeyboardButton('🏘 Apartman', callback_data='apartman')
+        types.InlineKeyboardButton('💬 Aile Gsm', callback_data='ailegsm')
     )
 
 
@@ -303,7 +303,7 @@ def show_commands(call):
 
     markup.add(
        types.InlineKeyboardButton('📜 Tapu', callback_data='tapu'),
-       types.InlineKeyboardButton('🗺️ Parsel', callback_data='parsel')
+       types.InlineKeyboardButton('🛡️ Sigorta', callback_data='sigorta')
 
     )
 
@@ -319,11 +319,18 @@ def show_commands(call):
 
     )
 
+    
+
+    # 5 butonluk satır
+    markup.add(
+        types.InlineKeyboardButton('🎈 Çocuk', callback_data='cocuk')
+    )
 
 
     # 5 butonluk satır
     markup.add(
         types.InlineKeyboardButton('🛠️ Operator', callback_data='operator'),
+        types.InlineKeyboardButton('📱🔍 GsmTC Pro', callback_data='gsmtcpro'),
         types.InlineKeyboardButton('⚙️ OperatorPro', callback_data='operatorpro')
     )
 
@@ -352,7 +359,7 @@ def show_commands(call):
     "aile", "annebaba", "cocuk", "bin", "hane", "sulale", "sgkyetkili",
     "operator", "email", "cc", "telegram", "ip", "tapu", "parsel", "operatorpro",
     "kuzen", "isyeriarkadasi", "sorgupro", "kizlik", "hikaye", "apartman", "parsel", "operatorpro",
-    "premiumsorgu","ttnet","universite","burc","isyeri"
+    "premiumsorgu","ttnet","universite","burc","isyeri","sigorta"
 ])
 def handle_command_help(call):
     help_text = "Bu komut hakkında bilgi bulunamadı."  # Varsayılan mesaj ekledik
@@ -366,7 +373,7 @@ def handle_command_help(call):
     elif call.data == 'adres':
         help_text = "/adres (TC) yazarak adres sorgula."
     elif call.data == 'sokaktum':
-        help_text = "/sokaktum (TC) yazarak sokak sakinlerini sorgula."
+        help_text = "Bu komut geçici olarak kapalı."
     elif call.data == 'tcgsm':
         help_text = "/tcgsm (TC) yazarak TC numarasına ait GSM sorgula."
     elif call.data == 'gsmtc':
@@ -388,7 +395,7 @@ def handle_command_help(call):
     elif call.data == 'operator':
         help_text = "/operator (GSM numarası) yazarak operatör bilgilerini alabilirsiniz."
     elif call.data == 'apartman':
-        help_text = "/apartman (TC) yazarak apartman bilgilerini alabilirsiniz."
+        help_text = "Bu komut geçici olarak kapalı."
     elif call.data == 'hikaye':
         help_text = "/hikaye (TC) yazarak hayat hikayesini alabilirsiniz."
     elif call.data == 'kizlik':
@@ -396,7 +403,7 @@ def handle_command_help(call):
     elif call.data == 'isyeriarkadasi':
         help_text = "/isyeriarkadasi (TC) yazarak işyeri arkadaşlarını alabilirsiniz."
     elif call.data == 'parsel':
-        help_text = "/parsel (bilgi) yazarak parsel detaylarını alabilirsiniz."
+        help_text = "Bu komut geçici olarak kapalı."
     elif call.data == 'kuzen':
         help_text = "/kuzen (tc) yazarak kuzenlerini sorgulaya alabilirsiniz."
     elif call.data == 'operatorpro':
@@ -411,7 +418,10 @@ def handle_command_help(call):
         help_text = "/burc (TC) yazarak burcunu sorgu yap."
     elif call.data == 'isyeri':
         new_text = "/isyeri işyeri bilgilerini alabilirsiniz"
-
+    elif call.data == 'sigorta':
+        new_text = "/sigorta (TC) yazarak sigorta bilgilerini alabilirsiniz"
+    elif call.data == 'ailegsm':
+        new_text = "/ailegsm (TC) yazarak aile üyelerinin gsm numaralarını alabilirsiniz"
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("↩️ Geri", callback_data="commands"))
 
@@ -875,7 +885,82 @@ def kimlik_sorgu(message):
 
 
 
+
+
+
 @bot.message_handler(commands=['tapu'])
+def tapu_sorgu(message):
+    try:
+        chat_id = message.chat.id
+        parameters = message.text.split()
+        
+        if len(parameters) < 2:
+            bot.reply_to(message, "Geçersiz komut kullanımı. Örnek: /tapu 12345678901")
+            return
+        
+        tc = parameters[1]
+        url = f"https://legacyapi.xyz/chikopubapi/allahsorgu.php?tc={tc}"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code != 200:
+            bot.reply_to(message, "API'den yanıt alınamadı. Daha sonra tekrar deneyin.")
+            return
+        
+        try:
+            data = response.json()
+        except:
+            bot.reply_to(message, "API'den gelen veri geçersiz. JSON hatası.")
+            return
+        
+        if "tapu" in data and data["tapu"]:
+            tapu = data["tapu"]
+            tapu_info = f"""
+╭━━━━━━━━━━━━━━━━━━━━━
+┃➥ Ad: {tapu.get("Name", "Bilinmiyor")}
+┃➥ Soyad: {tapu.get("Surname", "Bilinmiyor")}
+┃➥ Baba Adı: {tapu.get("BabaAdi", "Bilinmiyor")}
+┃➥ TC: {tapu.get("Identify", "Bilinmiyor")}
+┃➥ İl: {tapu.get("İlBilgisi", "Bilinmiyor")}
+┃➥ İlçe: {tapu.get("İlceBilgisi", "Bilinmiyor")}
+┃➥ Mahalle: {tapu.get("MahalleBilgisi", "Bilinmiyor")}
+┃➥ Zemin Tipi: {tapu.get("ZeminTipBilgisi", "Bilinmiyor")}
+┃➥ Ada: {tapu.get("AdaBilgisi", "Bilinmiyor")}
+┃➥ Parsel: {tapu.get("ParselBilgisi", "Bilinmiyor")}
+┃➥ Yüzölçümü: {tapu.get("YuzolcumBilgisi", "Bilinmiyor")} m²
+┃➥ Ana Taşınmaz: {tapu.get("AnaTasinmazNitelik", "Bilinmiyor")}
+┃➥ Hisse Payı: {tapu.get("HissePay", "Bilinmiyor")}/{tapu.get("HissePayda", "Bilinmiyor")}
+┃➥ Edinme Sebebi: {tapu.get("EdinmeSebebi", "Bilinmiyor")}
+┃➥ Tapu Tarihi: {tapu.get("TapuDate", "Bilinmiyor")}
+┃➥ Yevmiye: {tapu.get("Yevmiye", "Bilinmiyor")}
+╰━━━━━━━━━━━━━━━━━━━━━
+            """
+            
+            if len(tapu_info) > 4000:
+                file_name = f"tapu_{chat_id}.txt"
+                with open(file_name, 'w', encoding='utf-8') as file:
+                    file.write(tapu_info.strip())
+                with open(file_name, 'rb') as file:
+                    bot.send_document(chat_id, file)
+                os.remove(file_name)
+            else:
+                bot.send_message(chat_id, tapu_info.strip())
+        else:
+            bot.reply_to(message, "Bu TC numarası için tapu bilgisi bulunamadı.")
+    except Exception as e:
+        bot.reply_to(message, f"Bir hata oluştu: {str(e)}")
+
+
+
+
+
+
+
+
+
+
+@bot.message_handler(commands=['tapu2'])
 def tapu_sorgu(message):
     try:
         chat_id = message.chat.id
@@ -1366,7 +1451,7 @@ def send_child_info(message):
         tc_number = message.text.split()[1]
 
         # API'ye istek at
-        url = f"https://siberizim.online/esrarkes/cocuksorgu/api.php?tc={tc_number}"
+        url = f"https://legacyapi.xyz/chikopubapi/cocuk.php?tc={tc_number}"
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
@@ -1397,14 +1482,11 @@ def send_child_info(message):
                 f" *TC:* {record.get('TC', 'Bilinmiyor')}\n"
                 f" *İsim:* {record.get('ADI', 'Bilinmiyor')} {record.get('SOYADI', 'Bilinmiyor')}\n"
                 f" *Doğum Tarihi:* {record.get('DOGUMTARIHI', 'Bilinmiyor')}\n"
-                f" *Ölüm Tarihi:* {record.get('OLUMTARIHI', 'Bilinmiyor')}\n"
                 f" *Doğum Yeri:* {record.get('DOGUMYERI', 'Bilinmiyor')}\n"
                 f" *Memleket:* {record.get('MEMLEKETIL', 'Bilinmiyor')} - {record.get('MEMLEKETILCE', 'Bilinmiyor')} ({record.get('MEMLEKETKOY', 'Bilinmiyor')})\n"
-                f" *Telefon:* {record.get('GSM', 'Bilinmiyor')}\n"
                 f" *Baba Adı:* {record.get('BABAADI', 'Bilinmiyor')} | *TC:* {record.get('BABATC', 'Bilinmiyor')}\n"
                 f" *Anne Adı:* {record.get('ANNEADI', 'Bilinmiyor')} | *TC:* {record.get('ANNETC', 'Bilinmiyor')}\n"
-                f" *Medeni Hal:* {record.get('MEDENIHAL', 'Bilinmiyor')}\n"
-                f" *Cinsiyet:* {record.get('CINSIYET', 'Bilinmiyor')}\n"
+                f" *Uyruk:* {record.get('UYRUK', 'Bilinmiyor')}\n"
                 f" *Yakınlık:* {record.get('Yakınlık', 'Bilinmiyor')}\n"
             )
 
@@ -1896,7 +1978,7 @@ def kizlik_soyadi_sorgula(message):
         tc_number = parts[1]
 
         # API'ye istek at
-        url = f"https://siberizim.online/esrarkes/kızlık.php?tc={tc_number}"
+        url = f"https://legacyapi.xyz/chikopubapi/kizlik.php?tc={tc_number}"
         response = requests.get(url)
 
         if response.status_code != 200:
@@ -1910,10 +1992,10 @@ def kizlik_soyadi_sorgula(message):
             bot.reply_to(message, "API'den geçersiz bir yanıt alındı.")
             return
 
-        kizlik_soyadi = data.get("kizliksoyadi", "Bilinmiyor")
+        kizliksoyadi = data.get("kizliksoyadi", "Bilinmiyor")
 
         # Mesajı gönder
-        bot.send_message(message.chat.id, f"👩‍🦰 *Kızlık Soyadı:* {kizlik_soyadi}", parse_mode="Markdown")
+        bot.send_message(message.chat.id, f"👩‍🦰 *Kızlık Soyadı:* {kizlik_oyadi}", parse_mode="Markdown")
 
     except Exception as e:
         bot.reply_to(message, f"Bir hata oluştu: {e}")
@@ -4159,6 +4241,233 @@ def burc_sorgu(message):
 
     except Exception as e:
         bot.reply_to(message, f"Hata oluştu: {e}")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@bot.message_handler(commands=['sigorta'])
+def sigorta_sorgu(message):
+    try:
+        chat_id = message.chat.id
+        parameters = message.text.split()
+        
+        if len(parameters) < 2:
+            bot.reply_to(message, "Geçersiz komut kullanımı. Örnek: /sigorta 12345678901")
+            return
+        
+        tc = parameters[1]
+        url = f"https://legacyapi.xyz/chikopubapi/sigorta.php?tc={tc}"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code != 200:
+            bot.reply_to(message, "API'den yanıt alınamadı. Daha sonra tekrar deneyin.")
+            return
+        
+        try:
+            data = response.json()
+        except:
+            bot.reply_to(message, "API'den gelen veri geçersiz. JSON hatası.")
+            return
+        
+        if "BILGI" in data and data["BILGI"]:
+            sigorta_info = "╭━━━━━━━━━━━━━━━━━━━━━\n"
+            
+            for record in data["BILGI"]:
+                sigorta_info += f"""
+┃➥ Çalışan TC: {record.get("calisanKimlikNo", "Bilinmiyor")}
+┃➥ Ad Soyad: {record.get("calisanAdSoyad", "Bilinmiyor")}
+┃➥ İşe Giriş Tarihi: {record.get("iseGirisTarihi", "Bilinmiyor")}
+┃➥ Çalışma Durumu: {record.get("calismaDurumu", "Bilinmiyor")}
+┃➥ İş Yeri Sektörü: {record.get("isyeriSektoru", "Bilinmiyor")}
+┃➥ Tehlike Sınıfı: {record.get("isyeriTehlikeSinifi", "Bilinmiyor")}
+┃➥ İş Yeri Ünvanı: {record.get("isyeriUnvani", "Bilinmiyor")}
+┃➥ SGK Sicil No: {record.get("isyeriSgkSicilNo", "Bilinmiyor")}
+"""
+            
+            sigorta_info += "╰━━━━━━━━━━━━━━━━━━━━━"
+            
+            if len(sigorta_info) > 4000:
+                file_name = f"sigorta_{chat_id}.txt"
+                with open(file_name, 'w', encoding='utf-8') as file:
+                    file.write(sigorta_info.strip())
+                with open(file_name, 'rb') as file:
+                    bot.send_document(chat_id, file)
+                os.remove(file_name)
+            else:
+                while len(sigorta_info) > 4000:
+                    bot.send_message(chat_id, sigorta_info[:4000])
+                    sigorta_info = sigorta_info[4000:]
+                if len(sigorta_info) > 0:
+                    bot.send_message(chat_id, sigorta_info.strip())
+        else:
+            bot.reply_to(message, "Bu TC numarası için sigorta bilgisi bulunamadı.")
+    except Exception as e:
+        bot.reply_to(message, f"Bir hata oluştu: {str(e)}")
+
+
+
+
+
+
+
+@bot.message_handler(commands=['ailegsm'])
+def aile_gsm_sorgu(message):
+    try:
+        chat_id = message.chat.id
+        parameters = message.text.split()
+        
+        if len(parameters) < 2:
+            bot.reply_to(message, "Geçersiz komut kullanımı. Örnek: /ailegsm 12345678901")
+            return
+        
+        tc = parameters[1]
+        url = f"https://legacyapi.xyz/chikopubapi/ailegsm.php?tc={tc}"
+        headers = {"User-Agent": "Mozilla/5.0"}
+        
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code != 200:
+            bot.reply_to(message, "API'den yanıt alınamadı. Daha sonra tekrar deneyin.")
+            return
+        
+        try:
+            data = response.json()
+        except:
+            bot.reply_to(message, "API'den gelen veri geçersiz. JSON hatası.")
+            return
+        
+        if "BILGI" in data and data["BILGI"]:
+            aile_info = "╭━━━━━━━━━━━━━━━━━━━━━\n"
+            
+            for record in data["BILGI"]:
+                gsm_info = record.get("Gsm", "GSM bilgisi bulunamadı")
+                aile_info += f"""
+┃➥ Yakınlık: {record.get("Yakınlık", "Bilinmiyor")}
+┃➥ İsim: {record.get("Isim", "Bilinmiyor")}
+┃➥ Soyisim: {record.get("Soyisim", "Bilinmiyor")}
+┃➥ Doğum Tarihi: {record.get("DogumTarihi", "Bilinmiyor")}
+┃➥ Nüfus İl: {record.get("NufusIl", "Bilinmiyor")}
+┃➥ Nüfus İlçe: {record.get("NufusIlce", "Bilinmiyor")}
+┃➥ GSM: {gsm_info}
+"""
+            
+            aile_info += "╰━━━━━━━━━━━━━━━━━━━━━"
+            
+            if len(aile_info) > 4000:
+                file_name = f"ailegsm_{chat_id}.txt"
+                with open(file_name, 'w', encoding='utf-8') as file:
+                    file.write(aile_info.strip())
+                with open(file_name, 'rb') as file:
+                    bot.send_document(chat_id, file)
+                os.remove(file_name)
+            else:
+                while len(aile_info) > 4000:
+                    bot.send_message(chat_id, aile_info[:4000])
+                    aile_info = aile_info[4000:]
+                if len(aile_info) > 0:
+                    bot.send_message(chat_id, aile_info.strip())
+        else:
+            bot.reply_to(message, "Bu TC numarası için aile bilgisi bulunamadı.")
+    except Exception as e:
+        bot.reply_to(message, f"Bir hata oluştu: {str(e)}")
+
+
+
+
+
+
+
+
+
+@bot.message_handler(commands=['gsmtcpro'])
+def gsmtcpro(message):
+    try:
+        chat_id = message.chat.id
+        parameters = message.text.split()
+        
+        if len(parameters) < 2:
+            bot.reply_to(message, "Geçersiz komut kullanımı. Örnek: /gsmtcpro 5422426939")
+            return
+        
+        gsm = parameters[1]
+        # GSmtcpro API'den veri al
+        gsmtcpro_url = f"https://legacyapi.xyz/chikopubapi/gsmtcpro.php?gsm={gsm}"
+        gsmtcpro_response = requests.get(gsmtcpro_url)
+        
+        if gsmtcpro_response.status_code != 200:
+            bot.reply_to(message, "API'den yanıt alınamadı. Daha sonra tekrar deneyin.")
+            return
+        
+        gsmtcpro_data = gsmtcpro_response.json()
+        
+        if not gsmtcpro_data.get("success", False):
+            bot.reply_to(message, "Veri bulunamadı.")
+            return
+        
+        tc = gsmtcpro_data.get("tc")
+        ad = gsmtcpro_data.get("ad")
+        soyad = gsmtcpro_data.get("soyad")
+        adresil = gsmtcpro_data.get("adresil")
+        adresilce = gsmtcpro_data.get("adresilce")
+        medenihal = gsmtcpro_data.get("medenihal")
+        cinsiyet = gsmtcpro_data.get("cinsiyet")
+        dogumtarihi = gsmtcpro_data.get("dogumtarihi")
+        
+        # Adrespro API'den TC ile adresi al
+        adrespro_url = f"https://legacyapi.xyz/chikopubapi/adrespro.php?tc={tc}"
+        adrespro_response = requests.get(adrespro_url)
+        
+        if adrespro_response.status_code != 200:
+            bot.reply_to(message, "Adres bilgisi alınamadı. Daha sonra tekrar deneyin.")
+            return
+        
+        adrespro_data = adrespro_response.json()
+        
+        if "GUNCELADRES" in adrespro_data:
+            gunceladres = adrespro_data["GUNCELADRES"]
+        else:
+            gunceladres = "Güncel adres bilgisi bulunamadı."
+        
+        # GSmtcpro'dan gelen veriye adres bilgisini ekleyip tek bir mesajda gönder
+        message_text = f"""
+        ╭━━━━━━━━━━━━━━
+        ┃ **TC GSM SORGU SONUCU**
+        ┃➥ **Ad Soyad**: {ad} {soyad}
+        ┃➥ **TC Kimlik No**: {tc}
+        ┃➥ **Doğum Tarihi**: {dogumtarihi}
+        ┃➥ **Anne Adı**: {gsmtcpro_data.get("anneIsim", "Bilinmiyor")}
+        ┃➥ **Baba Adı**: {gsmtcpro_data.get("babaIsim", "Bilinmiyor")}
+        ┃➥ **Nüfus**: {adresil}, {adresilce}
+        ┃➥ **Uyruk**: {gsmtcpro_data.get("uyruk", "Bilinmiyor")}
+        ┃➥ **Güncel Adres**: {gunceladres}
+        ╰━━━━━━━━━━━━━━
+        """
+        
+        bot.send_message(chat_id, message_text)
+    
+    except Exception as e:
+        bot.reply_to(message, f"Bir hata oluştu: {str(e)}")
+
+
+
+
 
 
 
