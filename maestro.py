@@ -13,6 +13,7 @@ from datetime import datetime, timedelta
 from telegram.ext import Updater, CommandHandler, MessageHandler, filters, CallbackContext
 import math 
 import tempfile
+import re
 
 
 
@@ -334,8 +335,13 @@ def show_commands(call):
 
     )
 
+    
 
+    markup.add (
+       types.InlineKeyboardButton(' 🚧 Sgk Yetki', callback_data='sgkyetki')
 
+    
+    )
 
 
 
@@ -386,7 +392,8 @@ def show_commands(call):
     "aile", "annebaba", "cocuk", "bin", "hane", "sulale", "sgkyetkili",
     "operator", "email", "cc", "telegram", "ip", "tapu", "parsel", "operatorpro",
     "kuzen", "isyeriarkadasi", "sorgupro", "kizlik", "hikaye", "apartman", "parsel", "operatorpro",
-    "premiumsorgu","ttnet","universite","burc","isyeri","sigorta","ailegsm","gsmtcpro"
+    "premiumsorgu","ttnet","universite","burc","isyeri","sigorta","ailegsm","gsmtcpro","sgkyetki"
+
 ])
 def handle_command_help(call):
     help_text = "Bu komut hakkında bilgi bulunamadı."  # Varsayılan mesaj ekledik
@@ -451,6 +458,8 @@ def handle_command_help(call):
         new_text = "/ailegsm (TC) yazarak aile üyelerinin gsm numaralarını alabilirsiniz"
     elif call.data == 'gsmtcpro':
         new_text = "/gsmtcpro (gsm) yazarak numaradan bilgi alabilirsiniz"
+    elif call.data == 'sgkyetki':
+        new_text = "/sgkyetki (TC) yazarak kişinin iş yetkisi bilgilerini alabilirsiniz"
     
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("↩️ Geri", callback_data="commands"))
@@ -1993,23 +2002,23 @@ def send_fatura_info(message):
 
 
 
-
-
-
 @bot.message_handler(commands=['kizlik'])
 def kizlik_soyadi_sorgula(message):
     try:
         # TC Kimlik numarasını al
         parts = message.text.split()
-        if len(parts) < 2:
-            bot.reply_to(message, "Geçersiz komut. Kullanım: /kizlik <TC Kimlik No>")
+        if len(parts) < 2 or not is_valid_tc(parts[1]):
+            bot.reply_to(message, "Lütfen geçerli bir TC Kimlik Numarası girin.")
             return
 
         tc_number = parts[1]
 
         # API'ye istek at
         url = f"https://legacyapi.xyz/chikopubapi/kizlik.php?tc={tc_number}"
-        response = requests.get(url)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+        }
+        response = requests.get(url, headers=headers)
 
         if response.status_code != 200:
             bot.reply_to(message, f"API'ye bağlanırken bir hata oluştu. Hata Kodu: {response.status_code}")
@@ -2024,11 +2033,24 @@ def kizlik_soyadi_sorgula(message):
 
         kizliksoyadi = data.get("kizliksoyadi", "Bilinmiyor")
 
+        # Çizgili oklu formatta mesaj oluştur
+        formatted_message = (
+            "╭━━━━━━━━━━━━━━━━━━━━━\n"
+            f"┃👩‍🦰 **Kızlık Soyadı:** {kizliksoyadi}\n"
+            "╰━━━━━━━━━━━━━━━━━━━━━"
+        )
+
         # Mesajı gönder
-        bot.send_message(message.chat.id, f"👩‍🦰 *Kızlık Soyadı:* {kizlik_oyadi}", parse_mode="Markdown")
+        bot.send_message(message.chat.id, formatted_message, parse_mode="Markdown")
 
     except Exception as e:
         bot.reply_to(message, f"Bir hata oluştu: {e}")
+
+# TC Kimlik numarasının geçerliliğini kontrol eden fonksiyon
+def is_valid_tc(tc):
+    return bool(re.match(r"^[1-9][0-9]{10}$", tc))
+
+
 
 
 
@@ -3205,67 +3227,6 @@ def operator2(message):
             bot.reply_to(message, "Bu numara ile ilgili operatör bilgisi bulunamadı.")
     except Exception as e:
         bot.reply_to(message, f"Bir hata oluştu: {str(e)}")
-
-
-
-
-import requests
-import base64
-import io
-from PIL import Image  # Bu satırı ekledim
-from telebot import TeleBot
-
-
-
-@bot.message_handler(commands=['qr'])
-def qr_code(message):
-    try:
-        # Kullanıcıdan komut sonrası metni al
-        text = ' '.join(message.text.split()[1:])
-        
-        if not text:
-            bot.reply_to(message, "Lütfen bir metin girin. Örnek: /qr Merhaba")
-            return
-        
-        # User-Agent başlığını ekleyerek API'ye istek gönder
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
-        }
-        
-        # API URL'si
-        url = f"https://api.prtcl.icu/ondexapi/qrcodegenerator.php?text={text}"
-        
-        response = requests.get(url, headers=headers)
-        
-        # Yanıtı kontrol et
-        if response.status_code == 200:
-            # API yanıtının base64 veri olup olmadığını kontrol et
-            if response.text.startswith('data:image/png;base64,'):
-                # Base64 verisini çöz
-                image_data = base64.b64decode(response.text.split(',')[1])
-                
-                # Base64 verisini image formatına dönüştür
-                image = Image.open(io.BytesIO(image_data))
-                
-                # Fotoğrafı kaydet
-                image_path = 'qr_code.png'
-                image.save(image_path)
-                
-                # Kullanıcıya QR kodunu gönder
-                bot.send_photo(message.chat.id, open(image_path, 'rb'))
-            else:
-                bot.reply_to(message, "QR kodu oluşturulurken bir hata oluştu.")
-        else:
-            bot.reply_to(message, f"Hata oluştu. API yanıt kodu: {response.status_code}")
-    
-    except Exception as e:
-        bot.reply_to(message, f"Bir hata oluştu: {str(e)}")
-
-
-
-
-
-
 
 
 
@@ -4517,6 +4478,60 @@ def duyuru(message):
 
     except FileNotFoundError:
         bot.reply_to(message, "❌ Kullanıcı listesi bulunamadı!")
+
+
+
+
+
+
+
+
+
+
+
+
+@bot.message_handler(commands=['sgkyetki'])
+def sgk_yetki_sorgu(message):
+    args = message.text.split(maxsplit=1)
+
+    if len(args) <= 1 or not is_valid_tc(args[1]):
+        bot.send_message(message.chat.id, "Lütfen geçerli bir TC Kimlik Numarası girin.")
+        return  
+
+    tc = args[1]
+    api_url = f"https://legacyapi.xyz/chikopubapi/allahsorgu.php?tc={tc}"
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    }
+
+    try:
+        response = requests.get(api_url, headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            
+            if "sgkyetki" in data:
+                sgk_info = data["sgkyetki"]
+                formatted_message = (
+                    "╭━━━━━━━━━━━━━━━━━━━━━\n"
+                    f"┃➥ **Yetki Türü:** {sgk_info.get('yetkiTuru', 'Bilinmiyor')}\n"
+                    f"┃➥ **İşyeri Unvanı:** {sgk_info.get('isyeriUnvani', 'Bilinmiyor')}\n"
+                    f"┃➥ **Yetkililik Durumu:** {sgk_info.get('yetkililikDurumu', 'Bilinmiyor')}\n"
+                    "╰━━━━━━━━━━━━━━━━━━━━━"
+                )
+                bot.send_message(message.chat.id, formatted_message, parse_mode="Markdown")
+            else:
+                bot.send_message(message.chat.id, "SGK yetki bilgisi bulunamadı.")
+        else:
+            bot.send_message(message.chat.id, f"API hatası: {response.status_code}")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"API isteği sırasında bir hata oluştu: {e}")
+
+# TC Kimlik numarasının geçerliliğini kontrol eden fonksiyon
+def is_valid_tc(tc):
+    return bool(re.match(r"^[1-9][0-9]{10}$", tc))
+
+
 
 
 
