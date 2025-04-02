@@ -3969,24 +3969,24 @@ def isyeri_sorgu(message):
 
 
 
-
-
 @bot.message_handler(commands=['ip'])
 def ip_info(message):
     args = message.text.split(maxsplit=1)
     
-    # Eğer IP adresi sağlanmamışsa veya IP adresi geçersizse, işlem yapma
     if len(args) <= 1 or not is_valid_ip(args[1]):
-        return  # Hiçbir şey yapmadan return ediyoruz, yani bot cevap vermez.
+        return  
     
     ip_address = args[1]
     
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    }
+
     try:
-        response = requests.get(f"http://ip-api.com/json/{ip_address}")
+        response = requests.get(f"http://ip-api.com/json/{ip_address}", headers=headers)
         if response.status_code == 200:
             ip_info = response.json()
             if ip_info["status"] == "success":
-                # Daha okunabilir bir mesaj formatı
                 formatted_message = (
                     f"🌐 **IP Bilgileri** 🌐\n"
                     f"• **IP Adresi:** {ip_info.get('query')}\n"
@@ -4009,15 +4009,10 @@ def ip_info(message):
         bot.send_message(message.chat.id, f"API isteği sırasında bir hata oluştu: {e}")
 
 
-# IP adresinin geçerliliğini kontrol eden fonksiyon
 def is_valid_ip(ip):
-    # IP adresi formatının geçerli olup olmadığını kontrol eder
     if re.match(r"^(?!.*[^\d\.])(?=\d{1,3}(\.\d{1,3}){3}$)(?!.*\.\.)(?!^\.)[0-9.]+$", ip):
         return True
     return False
-
-
-
 
 
 
