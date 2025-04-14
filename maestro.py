@@ -1,6 +1,5 @@
 import telebot
 import base64
-import openai
 from bs4 import BeautifulSoup
 import requests
 import os
