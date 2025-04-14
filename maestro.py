@@ -47,7 +47,7 @@ def add_user(user_id):
 
 
 # Bot Tokeninizi buraya girin
-BOT_TOKEN = "7601889695:AAFtV-nUPioYApM2NPtioGhHVvMo_3VCess"
+BOT_TOKEN = "7601889695:AAHK1c5hLSLVt5i-mPnuyeP_RP7XYVUBMKc"
 bot = telebot.TeleBot(BOT_TOKEN)
 
 
