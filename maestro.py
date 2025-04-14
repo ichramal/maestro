@@ -1,5 +1,7 @@
 import telebot
 import base64
+import openai
+from bs4 import BeautifulSoup
 import requests
 import os
 from io import BytesIO
@@ -14,6 +16,10 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, filters, Callb
 import math 
 import tempfile
 import re
+import os
+from urllib.parse import quote
+
+
 
 
 
@@ -399,11 +405,11 @@ def handle_command_help(call):
     help_text = "Bu komut hakkında bilgi bulunamadı."  # Varsayılan mesaj ekledik
 
     if call.data == 'sorgu':
-        help_text = "/sorgu (Ad Soyad/il ilce) yazarak sorgula."
+        help_text = "/sorgu (Ad Soyad/il ilce) yazarak sorgula. Çift isim sahibi sorgu için /sorgupro komutunu kullanın"
     elif call.data == 'tc':
         help_text = "/tc (TC numarası) yazarak sorgula."
     elif call.data == 'sorgupro':
-        help_text = "/sorgupro (Ad Soyad/il ilce) yazarak sorgula."
+        help_text = "/sorgupro (Ad Soyad/il ilce) yazarak sorgula. Çift isim sorgu Mevcuttur"
     elif call.data == 'adres':
         help_text = "/adres (TC) yazarak adres sorgula."
     elif call.data == 'sokaktum':
@@ -715,7 +721,6 @@ def gsmdetay_sorgu(message):
 
 
 
-
 # /gsmtc komutu
 @bot.message_handler(commands=['gsmtc'])
 def gsmtc_sorgu(message):
@@ -743,9 +748,9 @@ def gsmtc_sorgu(message):
             return
 
         if "Kisi" in data:
-            kisi = data["Kisi"][0]
-
-            result_text = f"""\
+            result_text = "GSM numarasına ait kişiler:\n\n"
+            for kisi in data["Kisi"]:
+                result_text += f"""\
 ╭━━━━━━━━━━━━━━
 ┃➥ Adı: {kisi['Adi']}
 ┃➥ Soyadı: {kisi['Soyadi']}
@@ -755,9 +760,24 @@ def gsmtc_sorgu(message):
 ┃➥ Baba Adı: {kisi['BabaAdi']} ({kisi['BabaTCKN']})
 ┃➥ Nüfus İl/İlçe: {kisi['NufusIl']} / {kisi['NufusIlce']}
 ┃➥ Uyruk: {kisi['Uyruk']}
-╰━━━━━━━━━━━━━━"""
+╰━━━━━━━━━━━━━━
 
-            bot.reply_to(message, result_text)
+"""
+            # Eğer toplam mesaj uzunluğu 4000 karakteri geçerse, metni txt dosyasına kaydedip, dosyayı gönderelim
+            if len(result_text) > 4000:
+                # Dosyaya yazma
+                file_path = 'gsmtc_results.txt'
+                with open(file_path, 'w', encoding='utf-8') as file:
+                    file.write(result_text)
+
+                # Dosyayı Telegram üzerinden gönderme
+                with open(file_path, 'rb') as file:
+                    bot.send_document(chat_id, file, caption="GSM sorgu sonuçları.")
+                # Dosyayı temizle
+                os.remove(file_path)
+            else:
+                # 4000 karakteri geçmediyse, doğrudan mesaj olarak gönder
+                bot.reply_to(message, result_text)
         else:
             bot.reply_to(message, "Bu GSM numarasına ait bilgiler bulunamadı.")
     except IndexError:
@@ -765,7 +785,6 @@ def gsmtc_sorgu(message):
     except Exception as e:
         print(f"GSM sorgulama hatası: {str(e)}")
         bot.reply_to(message, "Bir hata oluştu.")
-
 
 
 
@@ -830,58 +849,74 @@ def tc_sorgu(message):
         print(f"Genel hata: {str(e)}")
         bot.reply_to(message, "Bir hata oluştu.")
 
-
-
-
+import requests
+from urllib.parse import quote
+ 
 
 import requests
 import os
+from urllib.parse import quote
 
 @bot.message_handler(commands=['sorgupro'])
 def kimlik_sorgu(message):
     try:
         chat_id = message.chat.id
-        parameters = ' '.join(message.text.split()[1:]).split()
-        
+        parameters = message.text.split()[1:]
+
         if len(parameters) < 2:
-            bot.reply_to(message, "Geçersiz komut kullanımı. Örnek: /sorgupro Yezda Selvi Bursa Osmangazi")
+            bot.reply_to(message, "Geçersiz komut kullanımı. Örnek: /sorgupro Ece Su Yılmaz [İl] [İlçe]")
             return
-        
+
+        # İl ve ilçe varsa ayıkla
+        il = ""
+        ilce = ""
+
+        if len(parameters) >= 4:
+            ilce = parameters[-1]
+            il = parameters[-2]
+            soyad = parameters[-3]
+            ad = ' '.join(parameters[:-3])
+        elif len(parameters) == 3:
+            soyad = parameters[-1]
+            ad = ' '.join(parameters[:-1])
+        else:
+            soyad = parameters[1]
+            ad = parameters[0]
+
         query = {
-            'ad': parameters[0],  # Ad
-            'soyad': parameters[1]  # Soyad
+            'ad': ad,
+            'soyad': soyad
         }
-        
-        # İl varsa ekliyoruz
-        if len(parameters) > 2:
-            query['il'] = parameters[2]  # İl
-            # İlçe varsa ekliyoruz, ama ilçe zorunlu değil
-            if len(parameters) > 3:
-                query['ilce'] = parameters[3]
 
-        # URL'yi oluşturuyoruz
-        url = f"https://api.ondex.uk/ondexapi/adsoyadprosorgu.php?ad={query['ad']}&soyad={query['soyad']}"
+        if il:
+            query['il'] = il
+        if ilce:
+            query['ilce'] = ilce
+
+        url = f"https://api.ondex.uk/ondexapi/adsoyadprosorgu.php?ad={quote(query['ad'])}&soyad={quote(query['soyad'])}"
         if 'il' in query:
-            url += f"&il={query['il']}"
+            url += f"&il={quote(query['il'])}"
         if 'ilce' in query:
-            url += f"&ilce={query['ilce']}"
+            url += f"&ilce={quote(query['ilce'])}"
 
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
-        
+        headers = {
+            "User-Agent": "Mozilla/5.0"
+        }
+
         response = requests.get(url, headers=headers)
         print("API Yanıt Kodu:", response.status_code)
         print("API Yanıt İçeriği:", response.text)
-        
+
         if response.status_code != 200:
             bot.reply_to(message, "API'den yanıt alınamadı. Lütfen daha sonra tekrar deneyin.")
             return
-        
+
         try:
             data = response.json()
         except Exception:
             bot.reply_to(message, "API'den gelen veri geçersiz. JSON hatası.")
             return
-        
+
         if "Veri" in data and isinstance(data["Veri"], list) and len(data["Veri"]) > 0:
             person_info = "╭━━━━━━━━━━━━━━━━━━━━━"
             for person in data["Veri"]:
@@ -902,7 +937,7 @@ def kimlik_sorgu(message):
             person_info += "╰━━━━━━━━━━━━━━━━━━━━━"
 
             if len(person_info) > 4000:
-                file_name = f"data_{chat_id}.txt"
+                file_name = f"sorgu_sonuclari_{chat_id}.txt"
                 with open(file_name, 'w', encoding='utf-8') as file:
                     file.write(person_info.strip())
                 with open(file_name, 'rb') as file:
@@ -918,12 +953,6 @@ def kimlik_sorgu(message):
             bot.reply_to(message, "Bu bilgilerle ilgili herhangi bir sonuç bulunamadı.")
     except Exception as e:
         bot.reply_to(message, f"Bir hata oluştu: {str(e)}")
-
- 
-
-
-
-
 
 
 
@@ -2228,9 +2257,8 @@ def tcpro_sorgu(message):
         bot.reply_to(message, "Bir hata oluştu, tekrar deneyin.")
 
 
-
-
-
+import requests
+from urllib.parse import quote
 
 @bot.message_handler(commands=['sorgu'])
 def adsoyad_sorgu(message):
@@ -2238,19 +2266,32 @@ def adsoyad_sorgu(message):
         chat_id = message.chat.id
         args = message.text.split()
 
+        # Parametrelerin sayısını kontrol et
         if len(args) < 3:
             bot.reply_to(message, "Geçersiz komut. Kullanım: /sorgu Yezda Selvi Bursa Osmangazi")
             return
 
         ad = args[1]
         soyad = args[2]
+
+        # İl ve ilçe opsiyonel
         il = args[3] if len(args) > 3 else None
         ilce = args[4] if len(args) > 4 else None
 
+        # İkinci isim kontrolü: Eğer ikinci isim varsa, ad kısmını ona göre ayarla
+        if len(args) > 3 and not il and not ilce:
+            # Eğer il ve ilçe yoksa, ikinci isim olduğuna karar ver
+            ad = ' '.join(args[1:-2])  # Ad kısmına ikinci ismi de ekle
+            soyad = args[-2]  # Soyadı son parametre olarak ayarla
+            il = args[-1] if len(args) > 4 else None  # İl kontrolü
+            ilce = args[-1] if len(args) > 4 else None  # İlçe kontrolü
+
         # URL'yi oluştur
-        url = f"https://api.ondex.uk/ondexapi/adsoyadprosorgu.php?ad={ad}&soyad={soyad}"
+        url = f"https://api.ondex.uk/ondexapi/adsoyadprosorgu.php?ad={quote(ad)}&soyad={quote(soyad)}"
         if il and ilce:
-            url += f"&il={il}&ilce={ilce}"
+            url += f"&il={quote(il)}&ilce={quote(ilce)}"
+        elif il:
+            url += f"&il={quote(il)}"
 
         headers = {'User-Agent': 'Mozilla/5.0'}
         response = requests.get(url, headers=headers)
@@ -2306,9 +2347,6 @@ def adsoyad_sorgu(message):
     except Exception as e:
         print(f"Sorgulama hatası: {str(e)}")
         bot.reply_to(message, "Bir hata oluştu, tekrar deneyin.")
-
-
-
 
 
 
@@ -4530,6 +4568,86 @@ def sgk_yetki_sorgu(message):
 # TC Kimlik numarasının geçerliliğini kontrol eden fonksiyon
 def is_valid_tc(tc):
     return bool(re.match(r"^[1-9][0-9]{10}$", tc))
+
+
+
+
+@bot.message_handler(commands=['iban'])
+def handle_iban(message):
+    komut = message.text.split()
+    if len(komut) != 2:
+        bot.reply_to(message, "❗ Doğru kullanım: /iban IBAN")
+        return
+
+    iban = komut[1]
+
+    # Session Kullanımı
+    session = requests.Session()
+
+    cookies = {
+        'PHPSESSID': 'jthkuejr3j9f6jetegjnfp1ou2',
+        '_ga': 'GA1.1.1031110533.1731185638',
+        '_ga_HMMSM1LX9C': 'GS1.1.1731185638.1.0.1731185650.48.0.0',
+    }
+
+    headers = {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'tr-TR,tr;q=0.9',
+        'Connection': 'keep-alive',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Origin': 'https://hesapno.com',
+        'Referer': 'https://hesapno.com/mod_iban_coz',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',  # Güncel ve doğru User-Agent
+    }
+
+    data = {
+        'iban': iban,
+        'x': '84',
+        'y': '29',
+    }
+
+    try:
+        response = session.post('https://hesapno.com/mod_coz_iban.php', cookies=cookies, headers=headers, data=data, timeout=10)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        def extract_value(label, index=0):
+            elements = soup.find_all('b', string=label)
+            if len(elements) > index and elements[index].next_sibling:
+                return elements[index].next_sibling.strip()
+            return ''
+
+        result = {
+            'Banka Adı': extract_value('Ad:'),
+            'Banka Kodu': extract_value('Kod:'),
+            'Swift': extract_value('Swift:'),
+            'Hesap No': extract_value('Hesap No:'),
+            'Şube Adı': extract_value('Ad:', 1),
+            'Şube Kodu': extract_value('Kod:', 1),
+            'İl': extract_value('İl:'),
+            'İlçe': extract_value('İlçe:'),
+            'Tel': extract_value('Tel:'),
+            'Fax': extract_value('Fax:'),
+            'Adres': extract_value('Adres:'),
+        }
+
+        yanit = "\n".join(f"{k}: {v}" for k, v in result.items() if v)
+        bot.reply_to(message, yanit if yanit else "❗ Bilgi bulunamadı.")
+
+    except requests.exceptions.RequestException as e:
+        bot.reply_to(message, f"⚠️ Bağlantı hatası: {str(e)}")
+    except Exception as e:
+        bot.reply_to(message, f"⚠️ Hata oluştu: {str(e)}")
+
+
+
+
+
+
+
+
+
+
 
 
 
