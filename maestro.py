@@ -1,5 +1,5 @@
 import telebot
-import base64
+import base64 
 from bs4 import BeautifulSoup
 import requests
 import os
@@ -4645,16 +4645,73 @@ def handle_iban(message):
 
 
 
+@bot.message_handler(commands=['adililce'])
+def adililce_sorgu(message):
+    try:
+        args = message.text.split()
+        if len(args) < 4:
+            bot.reply_to(message, "Kullanım: /adililce [ad] [il] [ilçe]\nÖrnek: /adililce roket bursa osmangazi")
+            return
 
+        ad = args[1]
+        il = args[2]
+        ilce = args[3]
 
+        url = f"https://talaruscheck.site/apiler/adililce.php?ad={ad}&il={il}&ilce={ilce}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        }
 
+        response = requests.get(url, headers=headers)
 
+        # Verinin boş olup olmadığını kontrol et
+        if response.status_code == 200:
+            try:
+                # Ham veriyi kontrol et
+                print("API Yanıtı:", response.text)  # Burada API yanıtını kontrol edebilirsin
 
+                data = response.json()  # JSON'a dönüştürme
 
+                # Eğer JSON geçerli değilse
+                if not data or "success" not in data:
+                    bot.reply_to(message, "🔍 Geçersiz veya boş veri alındı.")
+                    return
 
+                if data.get("success") and data.get("number", 0) > 0:
+                    mesajlar = []
 
+                    for kisi in data["data"]:
+                        mesaj = (
+                            "╭━━━━━━━━━━━━━━\n"
+                            "┃ TC GSM SORGU SONUCU\n"
+                            f"┃➥ Ad Soyad: {kisi['ADI']} {kisi['SOYADI']}\n"
+                            f"┃➥ TC Kimlik No: {kisi['TC']}\n"
+                            f"┃➥ Doğum Tarihi: {kisi['DOGUMTARIHI']}\n"
+                            f"┃➥ Anne Adı: {kisi['ANNEADI']}\n"
+                            f"┃➥ Baba Adı: {kisi['BABAADI']}\n"
+                            f"┃➥ Nüfus: {kisi['NUFUSIL']}, {kisi['NUFUSILCE']}\n"
+                            f"┃➥ Uyruk: {kisi['UYRUK']}\n"
+                            "╰━━━━━━━━━━━━━━"
+                        )
+                        mesajlar.append(mesaj)
 
+                    tum_mesaj = "\n".join(mesajlar)
 
+                    if len(tum_mesaj) > 4000:
+                        dosya = io.StringIO(tum_mesaj)
+                        dosya.name = "adililce_sonuc.txt"
+                        bot.send_document(message.chat.id, dosya)
+                    else:
+                        bot.reply_to(message, tum_mesaj)
+                else:
+                    bot.reply_to(message, "🔍 Kayıt bulunamadı.")
+            except ValueError as e:
+                bot.reply_to(message, f"❌ JSON işlenemedi: {e}")
+        else:
+            bot.reply_to(message, "❌ API erişim hatası.")
+
+    except Exception as e:
+        bot.reply_to(message, f"⚠️ Hata oluştu:\n{e}")
 
 
 
